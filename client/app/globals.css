@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+:root {
+  /* 1. Soft Neutrals & Pastels (Cream Look) */
+  --ivory-cream: #F5F2EB;       /* Base fabric tone */
+  --soft-blue-grey: #6C8496;    /* Floral print accent */
+  --muted-sage-green: #7A8B73;  /* Leaf accents */
+
+  /* 2. Rich Jewel Tones (Emerald Look) */
+  --deep-emerald: #1B5E3B;      /* Main saree body / Primary brand */
+  --golden-zari: #C5A059;       /* Border and highlights */
+  --berry-pink: #9C2766;        /* Floral motifs */
+
+  /* 3. Classic & Earthy Tones (Indigo & Terracotta Look) */
+  --indigo-blue: #2C405E;       /* Checkered cotton saree base */
+  --terracotta-rust: #D37053;   /* Accent highlights */
+  --champagne-gold: #D4AF37;    /* Zari weave lines */
+
+  /* 4. Luxury Brand Accents */
+  --deep-charcoal: #222222;     /* Elegant typography & dark footer */
+  --warm-beige: #E8DFD1;        /* Background walls and props */
+
+  /* Global Theme Aliases */
+  --background: var(--ivory-cream);
+  --foreground: var(--deep-charcoal);
+  --primary: var(--deep-emerald);
+  --primary-hover: #14462B;
+  --accent-gold: var(--golden-zari);
+}
+
+@theme inline {
+  --color-ivory-cream: var(--ivory-cream);
+  --color-soft-blue-grey: var(--soft-blue-grey);
+  --color-muted-sage-green: var(--muted-sage-green);
+
+  --color-deep-emerald: var(--deep-emerald);
+  --color-golden-zari: var(--golden-zari);
+  --color-berry-pink: var(--berry-pink);
+
+  --color-indigo-blue: var(--indigo-blue);
+  --color-terracotta-rust: var(--terracotta-rust);
+  --color-champagne-gold: var(--champagne-gold);
+
+  --color-deep-charcoal: var(--deep-charcoal);
+  --color-warm-beige: var(--warm-beige);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+html, body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  scroll-behavior: smooth;
+}
