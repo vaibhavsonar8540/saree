@@ -23,8 +23,8 @@ connectDB();
 
 // CORS Allowed Origins
 const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:3030',
-  process.env.ADMIN_URL || 'http://localhost:3031',
+  process.env.CLIENT_URL,
+  process.env.ADMIN_URL,
   'http://localhost:3000',
   'http://localhost:3030',
   'http://localhost:3031',
@@ -33,15 +33,21 @@ const allowedOrigins = [
   'http://127.0.0.1:3030',
   'http://127.0.0.1:3031',
   'http://127.0.0.1:5173',
-];
+].filter(Boolean);
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(null, true); // Allow all in dev environment
+    if (!origin) return callback(null, true);
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.vercel.app') ||
+      origin.endsWith('.onrender.com') ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1')
+    ) {
+      return callback(null, origin);
     }
+    return callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -54,7 +60,27 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
 
-// Health Check Route
+// Root Welcome & Health Check Routes
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Saree E-Commerce Backend API is active and running',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      sarees: '/api/sarees',
+      categories: '/api/categories',
+      cart: '/api/cart',
+      orders: '/api/orders',
+    },
+  });
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', message: 'Saree Backend API is running' });
+});
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'Saree Backend API is running' });
 });
@@ -88,3 +114,4 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
