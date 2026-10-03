@@ -72,7 +72,34 @@ const ProductCard = ({
       : 0);
 
   const displayImage = thumbnail || image || (images && images[0]) || (colorMedia && colorMedia[0]?.thumbnail) || "/assets/images/heroBanner.png";
-  const hoverImage = (images && images[1]) || (colorMedia && colorMedia[0]?.images?.[0]) || displayImage;
+
+  // Extract and format available colors for display
+  const availableColors = React.useMemo(() => {
+    let list = [];
+    if (Array.isArray(colors) && colors.length > 0) {
+      list = colors
+        .map((c) => {
+          if (typeof c === "string") return { hexCode: c, name: "" };
+          if (typeof c === "object" && c !== null)
+            return {
+              hexCode: c.hexCode || c.hex || c.code || "#cccccc",
+              name: c.name || c.colorName || "",
+            };
+          return null;
+        })
+        .filter(Boolean);
+    }
+    if (list.length === 0 && Array.isArray(colorMedia) && colorMedia.length > 0) {
+      list = colorMedia
+        .map((cm) => {
+          const hex = cm.colorId?.hexCode || cm.hexCode || cm.color?.hexCode || cm.hex;
+          const colorName = cm.colorId?.name || cm.name || cm.colorName || "";
+          return hex ? { hexCode: hex, name: colorName } : null;
+        })
+        .filter(Boolean);
+    }
+    return list;
+  }, [colors, colorMedia]);
 
   const handleWishlistClick = (e) => {
     e.preventDefault();
@@ -137,7 +164,7 @@ const ProductCard = ({
       <div className="relative w-full aspect-[4/5] sm:aspect-3/4 bg-stone-100 overflow-hidden shrink-0">
         <Link href={`/product/${_id}`} className="block w-full h-full relative">
           <CustomImage
-            srcAttr={isHovered && hoverImage ? hoverImage : displayImage}
+            srcAttr={displayImage}
             altAttr={productTitle}
             fill={true}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -186,11 +213,30 @@ const ProductCard = ({
       {/* DETAILS CONTAINER */}
       <div className="w-full p-2.5 sm:p-4 flex flex-col justify-between bg-white flex-1 space-y-2 sm:space-y-3">
         <div className="space-y-1">
-          {/* Top Header: Category Name */}
-          <div className="flex items-center justify-between">
-            <span className="text-[#C5A059] font-bold tracking-wider uppercase text-[9px] sm:text-[10px]">
+          {/* Top Header: Category Name & Available Color Swatches */}
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[#C5A059] font-bold tracking-wider uppercase text-[9px] sm:text-[10px] truncate">
               {catName}
             </span>
+
+            {/* Color Swatches */}
+            {availableColors.length > 0 && (
+              <div className="flex items-center gap-1 shrink-0">
+                {availableColors.slice(0, 4).map((col, idx) => (
+                  <span
+                    key={idx}
+                    title={col.name || "Color variant"}
+                    className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border border-stone-300 shadow-2xs transition-transform hover:scale-110"
+                    style={{ backgroundColor: col.hexCode }}
+                  />
+                ))}
+                {availableColors.length > 4 && (
+                  <span className="text-[9px] font-bold text-zinc-400 ml-0.5">
+                    +{availableColors.length - 4}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Product Title */}
@@ -200,9 +246,9 @@ const ProductCard = ({
             </h3>
           </Link>
 
-          {/* Short Description */}
+          {/* Short Description (Clamped to 3 lines) */}
           {description && (
-            <p className="text-[10px] sm:text-xs text-zinc-500 line-clamp-1 leading-relaxed hidden sm:block">
+            <p className="text-[11px] sm:text-xs text-zinc-500 line-clamp-3 leading-relaxed mt-1">
               {description}
             </p>
           )}
