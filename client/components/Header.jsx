@@ -516,8 +516,8 @@ export default function Header() {
 
       {/* FULLY RESPONSIVE MOBILE DRAWER */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-x-0 bottom-0 top-[72px] sm:top-[84px] z-40 lg:hidden flex flex-col bg-[#F5F2EB] border-t border-[#C5A059]/20 overflow-y-auto animate-in slide-in-from-left duration-200 no-lenis">
-          <div className="p-4 space-y-2 max-w-lg w-full mx-auto pb-24">
+        <div className="absolute top-full left-0 right-0 w-full h-[calc(100dvh-100%)] z-40 lg:hidden flex flex-col bg-[#F5F2EB] border-t border-[#C5A059]/20 overflow-y-auto animate-in slide-in-from-top-2 duration-200 no-lenis shadow-2xl">
+          <div className="p-4 space-y-2 max-w-lg w-full mx-auto pb-28">
             {/* Home */}
             <Link
               href="/"
@@ -528,7 +528,7 @@ export default function Header() {
             </Link>
 
             {/* Saree with Arrow Toggle for Categories Dropdown */}
-            <div className="rounded-xl border border-stone-200/80 bg-white/60 overflow-hidden">
+            <div className="rounded-xl border border-stone-200/80 bg-white/60 overflow-hidden shadow-xs">
               <div className="flex items-center justify-between px-4 py-3.5 font-semibold text-base text-[#1B5E3B]">
                 <Link
                   href="/sarees"
@@ -604,23 +604,6 @@ export default function Header() {
               )}
             </div>
 
-            {/* My Favourites */}
-            <Link
-              href="/wishlist"
-              onClick={() => dispatch(closeMobileMenu())}
-              className="flex items-center justify-between px-4 py-3.5 rounded-xl font-semibold text-base text-[#222222] hover:bg-[#1B5E3B]/10 hover:text-[#1B5E3B] transition-colors border-b border-stone-200/60"
-            >
-              <div className="flex items-center gap-2">
-                <FiHeart className="text-rose-500 fill-rose-500 text-base" />
-                <span>My Favourites</span>
-              </div>
-              {favouriteCount > 0 && (
-                <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  {favouriteCount}
-                </span>
-              )}
-            </Link>
-
             {/* About Us */}
             <Link
               href="/about"
@@ -634,9 +617,26 @@ export default function Header() {
             <Link
               href="/contact"
               onClick={() => dispatch(closeMobileMenu())}
-              className="flex items-center justify-between px-4 py-3.5 rounded-xl font-semibold text-base text-[#222222] hover:bg-[#1B5E3B]/10 hover:text-[#1B5E3B] transition-colors"
+              className="flex items-center justify-between px-4 py-3.5 rounded-xl font-semibold text-base text-[#222222] hover:bg-[#1B5E3B]/10 hover:text-[#1B5E3B] transition-colors border-b border-stone-200/60"
             >
               <span>Contact Us</span>
+            </Link>
+
+            {/* My Favourites (AT THE LAST BELOW CONTACT US) */}
+            <Link
+              href="/wishlist"
+              onClick={() => dispatch(closeMobileMenu())}
+              className="flex items-center justify-between px-4 py-3.5 rounded-xl font-semibold text-base text-[#222222] hover:bg-[#1B5E3B]/10 hover:text-[#1B5E3B] transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <FiHeart className="text-rose-500 fill-rose-500 text-lg" />
+                <span>My Favourites</span>
+              </div>
+              {favouriteCount > 0 && (
+                <span className="bg-rose-500 text-white text-xs font-bold px-2.5 py-0.5 rounded-full shadow-xs">
+                  {favouriteCount}
+                </span>
+              )}
             </Link>
           </div>
         </div>
