@@ -18,6 +18,8 @@ import {
   FiShoppingBag,
 } from "react-icons/fi";
 
+import { ProductGridSkeleton } from "@/components/Skeleton";
+
 export default function WishlistPage() {
   const dispatch = useDispatch();
   const [items, setItems] = useState([]);
@@ -175,9 +177,9 @@ export default function WishlistPage() {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-[#F5F2EB] flex flex-col items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[#1B5E3B] border-t-transparent rounded-full animate-spin mb-3" />
-        <p className="font-serif font-bold text-[#1B5E3B] text-sm">Loading your Favourites...</p>
+      <div className="min-h-screen bg-[#F5F2EB] py-12 px-4 max-w-7xl mx-auto space-y-6">
+        <div className="h-8 bg-stone-200 rounded-md w-48 animate-pulse" />
+        <ProductGridSkeleton count={4} />
       </div>
     );
   }

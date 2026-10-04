@@ -10,9 +10,11 @@ import {
   closeMobileMenu,
   openCartDrawer,
 } from "@/redux/slice/headerSlice";
-import CartDrawer from "@/components/CartDrawer";
-import AuthModal from "@/components/AuthModal";
-import UserProfileModal from "@/components/UserProfileModal";
+import {
+  DynamicCartDrawer as CartDrawer,
+  DynamicAuthModal as AuthModal,
+  DynamicUserProfileModal as UserProfileModal,
+} from "@/components/DynamicComponent";
 import { logoutUser } from "@/service/authService";
 import {
   FiMenu,

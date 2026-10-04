@@ -19,34 +19,7 @@ import {
   FiArrowLeft,
 } from "react-icons/fi";
 
-const INITIAL_MOCK_CART = [
-  {
-    _id: "cart-1",
-    productId: "6abe60de54b7c3a7ca81f258",
-    name: "Royal Purple Kanjeevaram Silk Saree",
-    fabric: "Pure Kanjeevaram Silk",
-    colorName: "Deep Purple & Gold Zari",
-    colorHex: "#5B2C6F",
-    price: 1999,
-    originalPrice: 2499,
-    quantity: 1,
-    image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&auto=format&fit=crop",
-    inStock: true,
-  },
-  {
-    _id: "cart-2",
-    productId: "6abe60de54b7c3a7ca81f259",
-    name: "Banarasi Heavy Zari Border Saree",
-    fabric: "Pure Banarasi Silk",
-    colorName: "Emerald Green & Gold",
-    colorHex: "#1B5E3B",
-    price: 4500,
-    originalPrice: 5999,
-    quantity: 1,
-    image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=800&auto=format&fit=crop",
-    inStock: true,
-  },
-];
+import { CartSkeleton } from "@/components/Skeleton";
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState([]);
@@ -60,10 +33,10 @@ export default function CartPage() {
     const loadCartAndHydrate = async () => {
       try {
         const savedCart = localStorage.getItem("anjali_cart");
-        let rawCart = savedCart ? JSON.parse(savedCart) : INITIAL_MOCK_CART;
+        let rawCart = savedCart ? JSON.parse(savedCart) : [];
 
-        if (!Array.isArray(rawCart) || rawCart.length === 0) {
-          rawCart = INITIAL_MOCK_CART;
+        if (!Array.isArray(rawCart)) {
+          rawCart = [];
         }
 
         // Hydrate with latest backend product info if available
@@ -92,7 +65,7 @@ export default function CartPage() {
 
         setCartItems(hydratedCart);
       } catch (e) {
-        setCartItems(INITIAL_MOCK_CART);
+        setCartItems([]);
       }
       setIsLoaded(true);
     };
@@ -179,8 +152,9 @@ export default function CartPage() {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-[#F5F2EB] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[#1B5E3B] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#F5F2EB] py-12 px-4 max-w-7xl mx-auto space-y-6">
+        <div className="h-8 bg-stone-200 rounded-md w-48 animate-pulse" />
+        <CartSkeleton />
       </div>
     );
   }

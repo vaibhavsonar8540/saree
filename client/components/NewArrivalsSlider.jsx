@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import ProductCard from "./productCard";
+import { ProductCardSkeleton } from "./Skeleton";
 import { fetchNewArrivals } from "@/service/productService";
 import { FiChevronLeft, FiChevronRight, FiStar, FiArrowRight } from "react-icons/fi";
 
@@ -199,11 +200,7 @@ export default function NewArrivalsSlider({ initialProducts = null }) {
 
       if (Array.isArray(apiData) && apiData.length > 0) {
         setProducts(apiData.slice(0, 8));
-      } else if (apiData === null) {
-        // API offline or error fallback to sample newly arrived products (max 8)
-        setProducts(sampleNewArrivals.slice(0, 8));
       } else {
-        // Empty array returned from backend (e.g. 0 products in DB)
         setProducts([]);
       }
       setLoading(false);
@@ -322,10 +319,7 @@ export default function NewArrivalsSlider({ initialProducts = null }) {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="h-[550px] bg-zinc-200/50 rounded-2xl animate-pulse border border-zinc-200"
-              />
+              <ProductCardSkeleton key={i} />
             ))}
           </div>
         ) : (

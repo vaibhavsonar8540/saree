@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import ProductCard from "@/components/productCard";
+import { ProductGridSkeleton } from "@/components/Skeleton";
 import { fetchSarees } from "@/service/productService";
 import axios from "axios";
 import {
@@ -756,19 +757,7 @@ function SareeCatalogContent() {
           <div className="lg:col-span-3">
             {loading ? (
               /* LOADING SKELETON GRID */
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
-                {[1, 2, 3, 4, 5, 6].map((idx) => (
-                  <div
-                    key={idx}
-                    className="bg-white rounded-xl p-3 space-y-2 border border-stone-200 animate-pulse"
-                  >
-                    <div className="w-full aspect-[4/5] bg-stone-200 rounded-lg" />
-                    <div className="h-3 bg-stone-200 rounded w-1/3" />
-                    <div className="h-4 bg-stone-200 rounded w-3/4" />
-                    <div className="h-3 bg-stone-200 rounded w-1/2" />
-                  </div>
-                ))}
-              </div>
+              <ProductGridSkeleton count={6} />
             ) : products.length === 0 ? (
               /* EMPTY CATALOG STATE */
               <div className="bg-white rounded-3xl p-10 sm:p-16 border border-stone-200 text-center max-w-lg mx-auto my-6 shadow-xs space-y-4">

@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import CustomImage from "./customImage";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
+import { CurvedCarouselSkeleton } from "./Skeleton";
+
 import traditionSliderImg from "@/assets/images/tradition-slider.webp";
 import banarasiSliderImg from "@/assets/images/banarasi-slider.webp";
 import cottonImg from "@/assets/images/cotton.webp";
@@ -44,8 +46,8 @@ const normalizeProduct = (item) => {
   };
 };
 
-export default function CurvedProductCarousel({ initialProducts = null }) {
-  const [products, setProducts] = useState(defaultCarouselProducts);
+export default function CurvedProductCarousel({ initialProducts = null, loading = false }) {
+  const [products, setProducts] = useState(initialProducts || defaultCarouselProducts);
   const [activeIndex, setActiveIndex] = useState(1);
   const [windowWidth, setWindowWidth] = useState(1200);
 
@@ -53,9 +55,15 @@ export default function CurvedProductCarousel({ initialProducts = null }) {
   const touchStartX = useRef(0);
 
   useEffect(() => {
-    setProducts(defaultCarouselProducts);
-    setActiveIndex(1);
-  }, []);
+    if (initialProducts && Array.isArray(initialProducts) && initialProducts.length > 0) {
+      setProducts(initialProducts);
+      setActiveIndex(Math.floor(initialProducts.length / 2));
+    }
+  }, [initialProducts]);
+
+  if (loading) {
+    return <CurvedCarouselSkeleton />;
+  }
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);

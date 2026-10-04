@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import ProductCard from "./productCard";
+import { ProductCardSkeleton } from "./Skeleton";
 import { fetchMostLovedProducts } from "@/service/productService";
 import { FiChevronLeft, FiChevronRight, FiHeart, FiArrowRight, FiFlame } from "react-icons/fi";
 
@@ -200,10 +201,7 @@ export default function MostLovedSlider({ initialProducts = null }) {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="h-[550px] bg-zinc-200/50 rounded-2xl animate-pulse border border-zinc-200"
-              />
+              <ProductCardSkeleton key={i} />
             ))}
           </div>
         ) : (

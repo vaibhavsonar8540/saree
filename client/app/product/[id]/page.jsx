@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useDispatch } from "react-redux";
 import CustomImage from "@/components/customImage";
+import { ProductDetailSkeleton } from "@/components/Skeleton";
 import ProductCard from "@/components/productCard";
 import { openCartDrawer } from "@/redux/slice/headerSlice";
 import { getWishlist, isInWishlist, toggleWishlist } from "@/utils/wishlist";
@@ -144,32 +145,7 @@ export default function ProductDetailPage() {
           setRelatedProducts(all.filter((item) => item._id !== data._id).slice(0, 4));
         }
       } else {
-        // Fallback dummy product if offline/seed missing
-        const fallback = {
-          _id: productId,
-          name: "Royal Kanjeevaram Pure Silk Handloom Saree",
-          SKU: "SAR-KAN-001",
-          description: "An exquisite masterpiece woven by master artisans with pure silver zari work and traditional peacocks woven across the pallu.",
-          category: "Silk Sarees",
-          subCategory: "Kanjivaram Silk",
-          sareeType: "Handloom Silk",
-          price: 15999,
-          discountedPrice: 12999,
-          fabric: "Pure Kanjeevaram Silk",
-          pattern: "Zari Woven Peacocks",
-          occasion: "Bridal & Festive",
-          workType: "Zari Brocade",
-          borderType: "Contrast Heavy Zari Border",
-          sareeLength: 5.5,
-          sareeWidth: 1.2,
-          blousePiece: true,
-          blouseLength: 0.8,
-          stock: 12,
-          thumbnail: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&auto=format&fit=crop",
-          colorMedia: [],
-        };
-        setProduct(fallback);
-        setActiveMedia({ type: "image", url: fallback.thumbnail });
+        setProduct(null);
       }
 
       setLoading(false);
@@ -233,9 +209,8 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center bg-[#F5F2EB]">
-        <FiRefreshCw className="w-10 h-10 text-[#1B5E3B] animate-spin mb-4" />
-        <p className="font-serif text-[#222222] font-bold text-lg">Loading Exquisite Saree Details...</p>
+      <div className="min-h-screen bg-[#F5F2EB] py-8">
+        <ProductDetailSkeleton />
       </div>
     );
   }

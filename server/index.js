@@ -12,6 +12,7 @@ const subCategoryRoutes = require('./routes/subCategoryRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const favouriteRoutes = require('./routes/favouriteRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const contactRoutes = require('./routes/contactRoutes');
 
 dotenv.config();
 
@@ -90,6 +91,8 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/favourites', favouriteRoutes);
 app.use('/api/wishlist', favouriteRoutes); // Alias for wishlist endpoints
 app.use('/api/orders', orderRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/contacts', contactRoutes); // Alias for contacts endpoint
 
 // 404 Route Handler
 app.use((req, res) => {

@@ -10,10 +10,12 @@ import { FiPackage, FiShield, FiTruck, FiArrowRight } from "react-icons/fi";
 import HeroBanner from "../components/heroBanner";
 import ProductCard from "../components/productCard";
 import CustomImage from "../components/customImage";
-import NewArrivalsSlider from "../components/NewArrivalsSlider";
-import MostLovedSlider from "../components/MostLovedSlider";
-import CurvedProductCarousel from "../components/CurvedProductCarousel";
-import CustomerReviews from "../components/CustomerReviews";
+import {
+  DynamicNewArrivalsSlider as NewArrivalsSlider,
+  DynamicMostLovedSlider as MostLovedSlider,
+  DynamicCurvedProductCarousel as CurvedProductCarousel,
+  DynamicCustomerReviews as CustomerReviews,
+} from "../components/DynamicComponent";
 import FaqSection from "../components/FaqSection";
 import Link from "next/link";
 

@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { closeCartDrawer } from "@/redux/slice/headerSlice";
 import CustomImage from "./customImage";
 import { fetchProductById } from "@/service/productService";
+import { CartSkeleton } from "./Skeleton";
 import {
   FiX,
   FiShoppingBag,
@@ -15,19 +16,6 @@ import {
   FiArrowRight,
   FiShoppingBag as FiCartIcon,
 } from "react-icons/fi";
-
-const INITIAL_MOCK_CART = [
-  {
-    _id: "cart-1",
-    productId: "6abe60de54b7c3a7ca81f258",
-    name: "Elegant Deep Wine Georgette Saree",
-    fabric: "Pure Georgette",
-    price: 1299,
-    originalPrice: 1500,
-    quantity: 1,
-    image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&auto=format&fit=crop",
-  },
-];
 
 export default function CartDrawer() {
   const dispatch = useDispatch();
@@ -40,15 +28,15 @@ export default function CartDrawer() {
   const loadCartFromStorage = async () => {
     try {
       const savedCart = localStorage.getItem("anjali_cart");
-      let rawCart = savedCart ? JSON.parse(savedCart) : INITIAL_MOCK_CART;
+      let rawCart = savedCart ? JSON.parse(savedCart) : [];
 
-      if (!Array.isArray(rawCart) || rawCart.length === 0) {
-        rawCart = savedCart ? [] : INITIAL_MOCK_CART;
+      if (!Array.isArray(rawCart)) {
+        rawCart = [];
       }
 
       setCartItems(rawCart);
     } catch (e) {
-      setCartItems(INITIAL_MOCK_CART);
+      setCartItems([]);
     }
     setIsLoaded(true);
   };
@@ -203,10 +191,7 @@ export default function CartDrawer() {
         {/* DRAWER BODY: CART ITEMS LIST */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-white">
           {!isLoaded ? (
-            <div className="flex flex-col items-center justify-center h-48 space-y-3">
-              <div className="w-8 h-8 border-3 border-[#1B5E3B] border-t-transparent rounded-full animate-spin" />
-              <p className="text-xs text-zinc-400">Loading your bag...</p>
-            </div>
+            <CartSkeleton />
           ) : cartItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center py-12 space-y-4">
               <div className="w-16 h-16 bg-[#1B5E3B]/10 rounded-full flex items-center justify-center text-[#1B5E3B]">
