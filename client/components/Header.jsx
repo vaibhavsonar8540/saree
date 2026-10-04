@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchHeaderCategoriesAction } from "@/redux/action/headerAction";
 import {
@@ -36,6 +37,7 @@ import { getWishlist } from "@/utils/wishlist";
 
 export default function Header() {
   const dispatch = useDispatch();
+  const router = useRouter();
   const { categories, loading, isCardOpen, isMobileMenuOpen } = useSelector(
     (state) => state.header
   );
@@ -54,6 +56,9 @@ export default function Header() {
   const [user, setUser] = useState(null);
 
   const leaveTimeoutRef = useRef(null);
+  const searchPanelRef = useRef(null);
+  const desktopSearchBtnRef = useRef(null);
+  const mobileSearchBtnRef = useRef(null);
 
   const checkUserAuth = () => {
     try {
@@ -147,6 +152,35 @@ export default function Header() {
     }
   };
 
+  // Close search bar on outside click or icon re-click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        searchOpen &&
+        searchPanelRef.current &&
+        !searchPanelRef.current.contains(event.target) &&
+        (!desktopSearchBtnRef.current || !desktopSearchBtnRef.current.contains(event.target)) &&
+        (!mobileSearchBtnRef.current || !mobileSearchBtnRef.current.contains(event.target))
+      ) {
+        setSearchOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [searchOpen]);
+
+  const handleSearchSubmit = (e) => {
+    if (e) e.preventDefault();
+    const trimmed = searchTerm.trim();
+    if (trimmed) {
+      router.push(`/sarees?search=${encodeURIComponent(trimmed)}`);
+      setSearchOpen(false);
+    }
+  };
+
   useEffect(() => {
     dispatch(fetchHeaderCategoriesAction());
     updateCartCount();
@@ -197,37 +231,14 @@ export default function Header() {
             {/* Search Icon on Small Screens (right next to Hamburger menu button) */}
             <div className="relative lg:hidden">
               <button
+                ref={mobileSearchBtnRef}
                 type="button"
                 onClick={() => setSearchOpen(!searchOpen)}
-                className="p-2 text-[#222222] hover:text-[#1B5E3B] hover:bg-[#1B5E3B]/10 rounded-full transition-colors focus:outline-none"
+                className="p-2 text-[#222222] hover:text-[#1B5E3B] hover:bg-[#1B5E3B]/10 rounded-full transition-colors focus:outline-none cursor-pointer"
                 aria-label="Search"
               >
                 <FiSearch className="h-5 w-5" />
               </button>
-
-              {searchOpen && (
-                <div className="absolute left-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-xs p-2 rounded-2xl bg-[#F5F2EB] border border-[#C5A059]/30 shadow-xl z-50">
-                  <div className="relative flex items-center">
-                    <FiSearch className="absolute left-3 text-zinc-400 h-4 w-4" />
-                    <input
-                      type="text"
-                      placeholder="Search sarees, silk, organza..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-white text-zinc-800 border border-zinc-200 focus:outline-none focus:border-[#1B5E3B]"
-                      autoFocus
-                    />
-                    {searchTerm && (
-                      <button
-                        onClick={() => setSearchTerm("")}
-                        className="absolute right-2 text-zinc-400 hover:text-zinc-600"
-                      >
-                        <FiX className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
@@ -300,37 +311,14 @@ export default function Header() {
             {/* Search Icon on Big Screens Only */}
             <div className="relative hidden lg:block">
               <button
+                ref={desktopSearchBtnRef}
                 type="button"
                 onClick={() => setSearchOpen(!searchOpen)}
-                className="p-2.5 text-[#222222] hover:text-[#1B5E3B] hover:bg-[#1B5E3B]/10 rounded-full transition-colors focus:outline-none"
+                className="p-2.5 text-[#222222] hover:text-[#1B5E3B] hover:bg-[#1B5E3B]/10 rounded-full transition-colors focus:outline-none cursor-pointer"
                 aria-label="Search"
               >
                 <FiSearch className="h-5 w-5" />
               </button>
-
-              {searchOpen && (
-                <div className="absolute right-0 top-full mt-2 w-80 p-2 rounded-2xl bg-[#F5F2EB] border border-[#C5A059]/30 shadow-xl z-50">
-                  <div className="relative flex items-center">
-                    <FiSearch className="absolute left-3 text-zinc-400 h-4 w-4" />
-                    <input
-                      type="text"
-                      placeholder="Search sarees, silk, organza..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-white text-zinc-800 border border-zinc-200 focus:outline-none focus:border-[#1B5E3B]"
-                      autoFocus
-                    />
-                    {searchTerm && (
-                      <button
-                        onClick={() => setSearchTerm("")}
-                        className="absolute right-2 text-zinc-400 hover:text-zinc-600"
-                      >
-                        <FiX className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Wishlist Icon (Visible on Desktop, Hidden on Mobile Header) */}
@@ -446,6 +434,71 @@ export default function Header() {
         </div>
       </div>
 
+      {/* FULL-WIDTH SLIDING SEARCH BAR (SLIDES DOWN FROM HEADER) */}
+      <div
+        ref={searchPanelRef}
+        className={`w-full bg-[#F5F2EB] border-b border-[#C5A059]/30 shadow-lg transition-all duration-300 ease-out origin-top z-40 overflow-hidden ${
+          searchOpen
+            ? "opacity-100 translate-y-0 max-h-48 py-4 sm:py-5 pointer-events-auto visible"
+            : "opacity-0 -translate-y-4 max-h-0 py-0 pointer-events-none invisible"
+        }`}
+      >
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full">
+            {/* Pill Search Container */}
+            <div className="relative flex items-center w-full bg-white rounded-full border border-stone-300 focus-within:border-[#1B5E3B] focus-within:ring-2 focus-within:ring-[#1B5E3B]/20 shadow-xs transition-all overflow-hidden px-4 sm:px-6 py-2 sm:py-2.5">
+              <FiSearch className="text-zinc-400 h-4 w-4 sm:h-5 sm:w-5 shrink-0 mr-3" />
+              
+              <input
+                type="text"
+                placeholder="Search products by collection, category, subcategory, fabric..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 bg-transparent focus:outline-none py-1"
+                autoFocus={searchOpen}
+              />
+
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  className="p-1 text-zinc-400 hover:text-zinc-600 transition-colors mr-2 cursor-pointer"
+                  aria-label="Clear search"
+                >
+                  <FiX className="h-4 w-4" />
+                </button>
+              )}
+
+              <button
+                type="submit"
+                className="shrink-0 px-5 sm:px-7 py-2 bg-black hover:bg-[#1B5E3B] text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider rounded-full shadow-md transition-all cursor-pointer"
+              >
+                SEARCH
+              </button>
+            </div>
+          </form>
+
+          {/* Quick Popular Searches Tags */}
+          <div className="flex items-center justify-center gap-1.5 sm:gap-3 mt-3 flex-wrap text-[10px] sm:text-xs text-zinc-500">
+            <span className="font-semibold text-zinc-400">Popular Searches:</span>
+            {["Banarasi", "Kanchipuram", "Organza", "Silk", "Chanderi", "Bridal"].map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => {
+                  setSearchTerm(tag);
+                  router.push(`/sarees?search=${encodeURIComponent(tag)}`);
+                  setSearchOpen(false);
+                }}
+                className="px-3 py-1 rounded-full bg-white hover:bg-[#1B5E3B] hover:text-white border border-stone-200 text-zinc-600 transition-all font-medium cursor-pointer shadow-2xs"
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* FULL WIDTH SAREE MEGA DROPDOWN WITH SMOOTH HOVER TRANSITION */}
       <div
         onMouseEnter={handleMouseEnterMegaMenu}
@@ -459,14 +512,19 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-[#222222]">
           {/* Columns grid */}
           {loading ? (
-            <div className="grid grid-cols-4 gap-8 p-4">
-              <div className="h-32 bg-[#1B5E3B]/5 rounded-xl animate-pulse" />
-              <div className="h-32 bg-[#1B5E3B]/5 rounded-xl animate-pulse" />
-              <div className="h-32 bg-[#1B5E3B]/5 rounded-xl animate-pulse" />
-              <div className="h-32 bg-[#1B5E3B]/5 rounded-xl animate-pulse" />
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 xl:gap-12 min-h-40">
+              {[1, 2, 3, 4].map((n) => (
+                <div key={n} className="flex flex-col space-y-3 animate-pulse">
+                  <div className="h-5 bg-[#1B5E3B]/10 rounded-md w-3/4 mb-1 border-b border-[#C5A059]/20 pb-2" />
+                  <div className="h-3.5 bg-stone-300/50 rounded w-1/2" />
+                  <div className="h-3.5 bg-stone-300/50 rounded w-2/3" />
+                  <div className="h-3.5 bg-stone-300/50 rounded w-3/5" />
+                  <div className="h-3.5 bg-stone-300/50 rounded w-1/2" />
+                </div>
+              ))}
             </div>
           ) : categories && categories.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 xl:gap-12 min-h-[160px]">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 xl:gap-12 min-h-40">
               {categories.map((cat) => (
                 <div key={cat._id} className="flex flex-col space-y-3">
                   {/* Category Header */}

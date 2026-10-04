@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import ProductCard from "@/components/productCard";
@@ -15,6 +15,7 @@ import {
   FiX,
   FiSearch,
   FiChevronRight,
+  FiChevronLeft,
   FiChevronDown,
   FiCheck,
   FiGrid,
@@ -32,6 +33,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/a
 function SareeCatalogContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const productSectionRef = useRef(null);
 
   const categoryParam = searchParams.get("category") || "";
   const subCategoryParam = searchParams.get("subCategory") || "";
@@ -41,23 +43,26 @@ function SareeCatalogContent() {
   const [loading, setLoading] = useState(true);
   const [categoriesList, setCategoriesList] = useState([]);
 
-  // Accordion Toggle States for Sidebar Sections
-  const [categoriesOpen, setCategoriesOpen] = useState(true);
-  const [priceOpen, setPriceOpen] = useState(true);
-  const [fabricOpen, setFabricOpen] = useState(true);
-  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  // Pagination States (10 products per page as requested)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
 
-  // Filter States
+  // Active Applied Filters
   const [activeCategory, setActiveCategory] = useState(categoryParam);
   const [activeSubCategory, setActiveSubCategory] = useState(subCategoryParam);
   const [selectedFabric, setSelectedFabric] = useState("");
-  const [sortBy, setSortBy] = useState("newest");
+  const [sortBy, setSortBy] = useState("date_desc");
   const [searchQuery, setSearchQuery] = useState(searchParam);
-
-  // Price Range Filter State
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
-  const [activePriceRange, setActivePriceRange] = useState("");
+
+  // Temporary Form Inputs for Horizontal Filter Bar
+  const [tempCategory, setTempCategory] = useState(categoryParam);
+  const [tempSubCategory, setTempSubCategory] = useState(subCategoryParam);
+  const [tempSortBy, setTempSortBy] = useState("date_desc");
+  const [tempMinPrice, setTempMinPrice] = useState("");
+  const [tempMaxPrice, setTempMaxPrice] = useState("");
 
   // Metadata Display Names
   const [activeCategoryName, setActiveCategoryName] = useState("");
@@ -67,7 +72,7 @@ function SareeCatalogContent() {
     "Handcrafted drapes woven by India's finest master artisans"
   );
 
-  // Fetch categories tree from API for sidebar & filter pills
+  // Fetch categories tree from API for filter dropdowns
   useEffect(() => {
     const loadCategoriesTree = async () => {
       try {
@@ -87,9 +92,12 @@ function SareeCatalogContent() {
     setActiveCategory(categoryParam);
     setActiveSubCategory(subCategoryParam);
     setSearchQuery(searchParam);
+    setTempCategory(categoryParam);
+    setTempSubCategory(subCategoryParam);
+    setCurrentPage(1);
   }, [categoryParam, subCategoryParam, searchParam]);
 
-  // Resolve Category & Subcategory Names for Header & Badges
+  // Resolve Category & Subcategory Names for Title & Badges
   useEffect(() => {
     let catName = "";
     let subName = "";
@@ -136,13 +144,14 @@ function SareeCatalogContent() {
     }
   }, [activeCategory, activeSubCategory, searchQuery, categoriesList]);
 
-  // Fetch Sarees from backend API
+  // Fetch Sarees from backend API with 10 items per page pagination
   useEffect(() => {
     const loadSareesData = async () => {
       setLoading(true);
       try {
         const queryParams = {
-          limit: 50,
+          page: currentPage,
+          limit: 10, // Strictly 10 products per page
           sortBy: sortBy,
         };
 
@@ -155,15 +164,20 @@ function SareeCatalogContent() {
 
         const data = await fetchSarees(queryParams);
         setProducts(data);
+        setTotalProducts(data.total ?? data.length);
+        setTotalPages(data.totalPages ?? 1);
       } catch (e) {
         console.error("Error fetching sarees catalog:", e);
         setProducts([]);
+        setTotalProducts(0);
+        setTotalPages(1);
       }
       setLoading(false);
     };
 
     loadSareesData();
   }, [
+    currentPage,
     activeCategory,
     activeSubCategory,
     selectedFabric,
@@ -173,93 +187,63 @@ function SareeCatalogContent() {
     maxPrice,
   ]);
 
-  // Control scroll lock when mobile filter drawer is open
-  useEffect(() => {
-    if (mobileFilterOpen) {
-      document.body.style.overflow = "hidden";
-      if (typeof window !== "undefined" && window.lenis) window.lenis.stop();
+  // Handle Apply Filters from horizontal filter bar
+  const handleApplyFilters = (e) => {
+    if (e) e.preventDefault();
+    setActiveCategory(tempCategory);
+    setActiveSubCategory(tempSubCategory);
+    setSortBy(tempSortBy);
+    setMinPrice(tempMinPrice);
+    setMaxPrice(tempMaxPrice);
+    setCurrentPage(1);
+
+    // Sync URL if category or subcategory changed
+    if (tempSubCategory) {
+      router.push(`/sarees?subCategory=${tempSubCategory}`);
+    } else if (tempCategory) {
+      router.push(`/sarees?category=${tempCategory}`);
+    } else if (searchQuery) {
+      router.push(`/sarees?search=${encodeURIComponent(searchQuery)}`);
     } else {
-      document.body.style.overflow = "";
-      if (typeof window !== "undefined" && window.lenis) window.lenis.start();
-    }
-    return () => {
-      document.body.style.overflow = "";
-      if (typeof window !== "undefined" && window.lenis) window.lenis.start();
-    };
-  }, [mobileFilterOpen]);
-
-  // Recalculate Lenis scroll bounds when products or accordions toggle
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.lenis) {
-      setTimeout(() => {
-        if (window.lenis) window.lenis.resize();
-      }, 150);
-    }
-  }, [products, categoriesOpen, priceOpen, fabricOpen]);
-
-  const handleCategorySelect = (catId) => {
-    if (activeCategory === catId) {
-      setActiveCategory("");
-      setActiveSubCategory("");
       router.push("/sarees");
-    } else {
-      setActiveCategory(catId);
-      setActiveSubCategory("");
-      router.push(`/sarees?category=${catId}`);
     }
   };
 
-  const handleSubCategorySelect = (subId, parentCatId) => {
-    if (activeSubCategory === subId) {
-      setActiveSubCategory("");
-      router.push(parentCatId ? `/sarees?category=${parentCatId}` : "/sarees");
-    } else {
-      if (parentCatId) setActiveCategory(parentCatId);
-      setActiveSubCategory(subId);
-      router.push(`/sarees?subCategory=${subId}`);
-    }
-  };
-
-  const handlePricePreset = (presetKey, minVal, maxVal) => {
-    if (activePriceRange === presetKey) {
-      setActivePriceRange("");
-      setMinPrice("");
-      setMaxPrice("");
-    } else {
-      setActivePriceRange(presetKey);
-      setMinPrice(minVal ? String(minVal) : "");
-      setMaxPrice(maxVal ? String(maxVal) : "");
-    }
-  };
-
+  // Reset all filters
   const handleResetFilters = () => {
+    setTempCategory("");
+    setTempSubCategory("");
+    setTempSortBy("date_desc");
+    setTempMinPrice("");
+    setTempMaxPrice("");
     setActiveCategory("");
     setActiveSubCategory("");
     setSelectedFabric("");
     setSearchQuery("");
     setMinPrice("");
     setMaxPrice("");
-    setActivePriceRange("");
-    setSortBy("newest");
+    setSortBy("date_desc");
+    setCurrentPage(1);
     router.push("/sarees");
   };
 
-  const fabricOptions = [
-    "Organza",
-    "Silk",
-    "Banarasi",
-    "Kanjivaram",
-    "Chiffon",
-    "Georgette",
-    "Cotton",
-  ];
+  // Pagination Change Handler with Smooth Scroll
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
+      setCurrentPage(newPage);
+      if (productSectionRef.current) {
+        productSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        window.scrollTo({ top: 400, behavior: "smooth" });
+      }
+    }
+  };
 
-  const pricePresets = [
-    { key: "under5k", label: "Under ₹5,000", min: null, max: 5000 },
-    { key: "5k-10k", label: "₹5,000 - ₹10,000", min: 5000, max: 10000 },
-    { key: "10k-20k", label: "₹10,000 - ₹20,000", min: 10000, max: 20000 },
-    { key: "above20k", label: "₹20,000+", min: 20000, max: null },
-  ];
+  // Get active subcategories based on selected temp category
+  const selectedCategoryObj = categoriesList.find(
+    (c) => c._id === tempCategory || c.name.toLowerCase() === tempCategory.toLowerCase()
+  );
+  const availableSubCategories = selectedCategoryObj?.subCategories || [];
 
   const isFilterActive =
     activeCategory ||
@@ -268,245 +252,6 @@ function SareeCatalogContent() {
     searchQuery ||
     minPrice ||
     maxPrice;
-
-  // Render the Sidebar Filter Content (reusable for desktop & mobile drawer)
-  const renderSidebarFilters = () => (
-    <div className="bg-white rounded-3xl border border-[#C5A059]/30 shadow-sm overflow-hidden divide-y divide-stone-100">
-      {/* FILTER PANEL HEADER */}
-      <div className="bg-[#0F2C24] text-[#F5F2EB] p-4 sm:p-5 flex items-center justify-between border-b border-[#C5A059]/30">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-[#C5A059]/20 text-[#C5A059] flex items-center justify-center">
-            <FiSliders className="w-4 h-4" />
-          </div>
-          <div>
-            <h3 className="font-serif font-bold text-base text-[#F5F2EB] tracking-wide">
-              Refine Selection
-            </h3>
-            <p className="text-[10px] text-stone-300">Filter by category, price & fabric</p>
-          </div>
-        </div>
-
-        {isFilterActive && (
-          <button
-            type="button"
-            onClick={handleResetFilters}
-            className="flex items-center gap-1 text-[11px] font-bold text-[#C5A059] hover:text-white transition-colors bg-white/10 px-2.5 py-1 rounded-lg border border-[#C5A059]/30 cursor-pointer"
-          >
-            <FiRotateCcw className="w-3 h-3" />
-            <span>Reset</span>
-          </button>
-        )}
-      </div>
-
-      {/* 1. CATEGORIES & SUBCATEGORIES ACCORDION */}
-      <div className="p-4 sm:p-5 space-y-3">
-        <button
-          type="button"
-          onClick={() => setCategoriesOpen(!categoriesOpen)}
-          className="w-full flex items-center justify-between text-left group cursor-pointer"
-        >
-          <span className="font-serif font-bold text-sm text-[#1B5E3B] flex items-center gap-2 group-hover:text-[#14462B] transition-colors">
-            <FiLayers className="w-4 h-4 text-[#C5A059]" />
-            Categories & Subcategories
-          </span>
-          <FiChevronDown
-            className={`w-4 h-4 text-zinc-400 transition-transform duration-300 ${
-              categoriesOpen ? "rotate-180 text-[#1B5E3B]" : ""
-            }`}
-          />
-        </button>
-
-        {categoriesOpen && (
-          <div className="pt-2 space-y-2 animate-fadeIn">
-            {categoriesList.length === 0 ? (
-              <div className="space-y-2 py-2">
-                <div className="h-4 bg-stone-100 rounded animate-pulse w-3/4" />
-                <div className="h-4 bg-stone-100 rounded animate-pulse w-1/2" />
-              </div>
-            ) : (
-              categoriesList.map((cat) => {
-                const isCatActive =
-                  activeCategory === cat._id ||
-                  activeCategory.toLowerCase() === cat.name.toLowerCase();
-
-                return (
-                  <div key={cat._id} className="space-y-1">
-                    {/* Category Item */}
-                    <button
-                      type="button"
-                      onClick={() => handleCategorySelect(cat._id)}
-                      className={`w-full flex items-center justify-between text-left text-xs font-serif font-bold py-2 px-3 rounded-xl transition-all cursor-pointer ${
-                        isCatActive
-                          ? "bg-[#1B5E3B] text-white shadow-xs"
-                          : "text-zinc-800 hover:bg-[#1B5E3B]/10 hover:text-[#1B5E3B]"
-                      }`}
-                    >
-                      <span className="truncate">{cat.name}</span>
-                      {isCatActive ? (
-                        <FiCheck className="w-3.5 h-3.5 text-white shrink-0" />
-                      ) : (
-                        <FiChevronRight className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                      )}
-                    </button>
-
-                    {/* Subcategories Tree */}
-                    {cat.subCategories && cat.subCategories.length > 0 && (
-                      <div className="pl-3 ml-3 border-l-2 border-[#C5A059]/30 space-y-1 py-1">
-                        {cat.subCategories.map((sub) => {
-                          const isSubActive =
-                            activeSubCategory === sub._id ||
-                            activeSubCategory.toLowerCase() === sub.name.toLowerCase();
-
-                          return (
-                            <button
-                              key={sub._id}
-                              type="button"
-                              onClick={() => handleSubCategorySelect(sub._id, cat._id)}
-                              className={`w-full text-left text-[11px] py-1.5 px-2.5 rounded-lg font-semibold transition-all flex items-center justify-between cursor-pointer ${
-                                isSubActive
-                                  ? "bg-[#C5A059]/20 text-[#8B6B23] font-bold border border-[#C5A059]/40"
-                                  : "text-zinc-600 hover:text-[#1B5E3B] hover:translate-x-0.5 hover:bg-stone-50"
-                              }`}
-                            >
-                              <span className="truncate">{sub.name}</span>
-                              {isSubActive && (
-                                <FiCheck className="w-3 h-3 text-[#1B5E3B] shrink-0" />
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* 2. PRICE RANGE FILTER ACCORDION */}
-      <div className="p-4 sm:p-5 space-y-3">
-        <button
-          type="button"
-          onClick={() => setPriceOpen(!priceOpen)}
-          className="w-full flex items-center justify-between text-left group cursor-pointer"
-        >
-          <span className="font-serif font-bold text-sm text-[#1B5E3B] flex items-center gap-2 group-hover:text-[#14462B] transition-colors">
-            <FiDollarSign className="w-4 h-4 text-[#C5A059]" />
-            Filter By Price
-          </span>
-          <FiChevronDown
-            className={`w-4 h-4 text-zinc-400 transition-transform duration-300 ${
-              priceOpen ? "rotate-180 text-[#1B5E3B]" : ""
-            }`}
-          />
-        </button>
-
-        {priceOpen && (
-          <div className="pt-2 space-y-3 animate-fadeIn">
-            {/* Price Preset Grid Buttons */}
-            <div className="grid grid-cols-2 gap-2">
-              {pricePresets.map((preset) => {
-                const isSelected = activePriceRange === preset.key;
-                return (
-                  <button
-                    key={preset.key}
-                    type="button"
-                    onClick={() => handlePricePreset(preset.key, preset.min, preset.max)}
-                    className={`text-center text-[11px] py-2 px-2.5 rounded-xl font-bold transition-all border cursor-pointer ${
-                      isSelected
-                        ? "bg-[#1B5E3B] text-white border-[#1B5E3B] shadow-2xs"
-                        : "bg-stone-50 text-zinc-700 border-stone-200 hover:bg-stone-100 hover:text-[#1B5E3B]"
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Custom Min/Max Input Box */}
-            <div className="pt-2 border-t border-stone-100 space-y-2">
-              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
-                Enter Custom Range (₹)
-              </span>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <span className="absolute left-2.5 top-2 text-xs text-zinc-400 font-bold">₹</span>
-                  <input
-                    type="number"
-                    placeholder="Min"
-                    value={minPrice}
-                    onChange={(e) => {
-                      setMinPrice(e.target.value);
-                      setActivePriceRange("");
-                    }}
-                    className="w-full pl-6 pr-2 py-1.5 bg-[#F5F2EB] border border-stone-300 rounded-xl text-xs font-semibold text-zinc-800 focus:outline-none focus:border-[#1B5E3B]"
-                  />
-                </div>
-                <span className="text-zinc-400 font-bold text-xs">-</span>
-                <div className="relative flex-1">
-                  <span className="absolute left-2.5 top-2 text-xs text-zinc-400 font-bold">₹</span>
-                  <input
-                    type="number"
-                    placeholder="Max"
-                    value={maxPrice}
-                    onChange={(e) => {
-                      setMaxPrice(e.target.value);
-                      setActivePriceRange("");
-                    }}
-                    className="w-full pl-6 pr-2 py-1.5 bg-[#F5F2EB] border border-stone-300 rounded-xl text-xs font-semibold text-zinc-800 focus:outline-none focus:border-[#1B5E3B]"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 3. FABRIC TYPE ACCORDION */}
-      <div className="p-4 sm:p-5 space-y-3">
-        <button
-          type="button"
-          onClick={() => setFabricOpen(!fabricOpen)}
-          className="w-full flex items-center justify-between text-left group cursor-pointer"
-        >
-          <span className="font-serif font-bold text-sm text-[#1B5E3B] flex items-center gap-2 group-hover:text-[#14462B] transition-colors">
-            <FiTag className="w-4 h-4 text-[#C5A059]" />
-            Fabric Type
-          </span>
-          <FiChevronDown
-            className={`w-4 h-4 text-zinc-400 transition-transform duration-300 ${
-              fabricOpen ? "rotate-180 text-[#1B5E3B]" : ""
-            }`}
-          />
-        </button>
-
-        {fabricOpen && (
-          <div className="pt-2 flex flex-wrap gap-1.5 animate-fadeIn">
-            {fabricOptions.map((fab) => {
-              const isSelected = selectedFabric === fab;
-              return (
-                <button
-                  key={fab}
-                  type="button"
-                  onClick={() => setSelectedFabric(isSelected ? "" : fab)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                    isSelected
-                      ? "bg-[#1B5E3B] text-white border-[#1B5E3B] shadow-2xs"
-                      : "bg-stone-50 text-zinc-700 border-stone-200 hover:bg-stone-100 hover:text-[#1B5E3B]"
-                  }`}
-                >
-                  {fab}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-[#F5F2EB] text-[#222222] font-sans pb-24">
@@ -540,14 +285,14 @@ function SareeCatalogContent() {
       </div>
 
       {/* HERO BANNER */}
-      <div className="bg-[#0F2C24] text-white py-10 sm:py-14 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="bg-[#0F2C24] text-white py-8 sm:py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#C5A059_1px,transparent_1px)] bg-size-[16px_16px]" />
-        <div className="max-w-7xl mx-auto relative z-10 space-y-3">
+        <div className="max-w-7xl mx-auto relative z-10 space-y-2">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#C5A059]/20 border border-[#C5A059]/40 text-[#C5A059] text-[10px] font-bold uppercase tracking-widest">
             <FiGrid className="w-3 h-3" />
             <span>Luxury Saree Collection</span>
           </div>
-          <h1 className="font-serif font-bold text-3xl sm:text-5xl text-[#F5F2EB] tracking-tight">
+          <h1 className="font-serif font-bold text-2xl sm:text-4xl text-[#F5F2EB] tracking-tight">
             {titleName}
           </h1>
           <p className="text-xs sm:text-sm text-stone-300 max-w-2xl font-light leading-relaxed">
@@ -556,10 +301,150 @@ function SareeCatalogContent() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        {/* ACTIVE FILTERS SUMMARY BAR */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        
+        {/* ========================================================================= */}
+        {/* HORIZONTAL FILTER BAR (MATCHING WEBSITE PALETTE)                          */}
+        {/* ========================================================================= */}
+        <div className="mb-8 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-[#EFECE6] border border-[#C5A059]/30 shadow-xs space-y-4">
+          <form onSubmit={handleApplyFilters} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              {/* 1. FILTER BY CATEGORY */}
+              <div className="space-y-1.5">
+                <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider text-zinc-600 uppercase">
+                  FILTER BY CATEGORY
+                </label>
+                <div className="relative">
+                  <select
+                    value={tempCategory}
+                    onChange={(e) => {
+                      setTempCategory(e.target.value);
+                      setTempSubCategory("");
+                    }}
+                    className="w-full appearance-none bg-[#F5F2EB] border border-[#C5A059]/40 hover:border-[#1B5E3B]/40 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium focus:outline-none focus:border-[#1B5E3B] focus:ring-1 focus:ring-[#1B5E3B]/20 transition-all cursor-pointer pr-10"
+                  >
+                    <option value="">
+                      All Categories ({categoriesList.length})
+                    </option>
+                    {categoriesList.map((cat) => (
+                      <option key={cat._id} value={cat._id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  <FiChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* 2. FILTER BY SUBCATEGORY */}
+              <div className="space-y-1.5">
+                <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider text-zinc-600 uppercase">
+                  FILTER BY SUBCATEGORY
+                </label>
+                <div className="relative">
+                  <select
+                    value={tempSubCategory}
+                    onChange={(e) => setTempSubCategory(e.target.value)}
+                    disabled={!tempCategory && availableSubCategories.length === 0}
+                    className={`w-full appearance-none bg-[#F5F2EB] border border-[#C5A059]/40 hover:border-[#1B5E3B]/40 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium focus:outline-none focus:border-[#1B5E3B] focus:ring-1 focus:ring-[#1B5E3B]/20 transition-all pr-10 ${
+                      !tempCategory && availableSubCategories.length === 0
+                        ? "opacity-60 cursor-not-allowed text-zinc-400"
+                        : "cursor-pointer"
+                    }`}
+                  >
+                    {!tempCategory ? (
+                      <option value="">Select a category first</option>
+                    ) : availableSubCategories.length === 0 ? (
+                      <option value="">No subcategories</option>
+                    ) : (
+                      <>
+                        <option value="">All Subcategories ({availableSubCategories.length})</option>
+                        {availableSubCategories.map((sub) => (
+                          <option key={sub._id} value={sub._id}>
+                            {sub.name}
+                          </option>
+                        ))}
+                      </>
+                    )}
+                  </select>
+                  <FiChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* 3. SORT BY DATE */}
+              <div className="space-y-1.5">
+                <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider text-zinc-600 uppercase">
+                  SORT BY DATE
+                </label>
+                <div className="relative">
+                  <select
+                    value={tempSortBy}
+                    onChange={(e) => setTempSortBy(e.target.value)}
+                    className="w-full appearance-none bg-[#F5F2EB] border border-[#C5A059]/40 hover:border-[#1B5E3B]/40 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium focus:outline-none focus:border-[#1B5E3B] focus:ring-1 focus:ring-[#1B5E3B]/20 transition-all cursor-pointer pr-10"
+                  >
+                    <option value="date_desc">Newly Uploaded</option>
+                    <option value="date_asc">Oldest First</option>
+                    <option value="price_asc">Price: Low to High</option>
+                    <option value="price_desc">Price: High to Low</option>
+                    <option value="popular">Most Popular</option>
+                  </select>
+                  <FiChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* 4. PRICE RANGE (₹) */}
+              <div className="space-y-1.5">
+                <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider text-zinc-600 uppercase">
+                  PRICE RANGE (₹)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    value={tempMinPrice}
+                    onChange={(e) => setTempMinPrice(e.target.value)}
+                    className="w-full bg-[#F5F2EB] border border-[#C5A059]/40 hover:border-[#1B5E3B]/40 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium focus:outline-none focus:border-[#1B5E3B] focus:ring-1 focus:ring-[#1B5E3B]/20 transition-all"
+                  />
+                  <span className="text-zinc-400 font-bold">-</span>
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    value={tempMaxPrice}
+                    onChange={(e) => setTempMaxPrice(e.target.value)}
+                    className="w-full bg-[#F5F2EB] border border-[#C5A059]/40 hover:border-[#1B5E3B]/40 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium focus:outline-none focus:border-[#1B5E3B] focus:ring-1 focus:ring-[#1B5E3B]/20 transition-all"
+                  />
+                </div>
+              </div>
+
+            </div>
+
+            {/* BUTTON ROW AT THE BOTTOM RIGHT */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              {isFilterActive && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="px-4 py-2.5 text-xs font-bold text-zinc-600 hover:text-rose-600 transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FiRotateCcw className="w-3.5 h-3.5" />
+                  <span>RESET FILTERS</span>
+                </button>
+              )}
+
+              <button
+                type="submit"
+                className="px-7 py-2.5 bg-black hover:bg-[#1B5E3B] text-white text-xs font-bold uppercase tracking-wider rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer"
+              >
+                APPLY FILTERS
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* ACTIVE FILTERS SUMMARY CHIPS */}
         {isFilterActive && (
-          <div className="mb-6 p-4 rounded-2xl bg-white border border-[#C5A059]/30 flex flex-wrap items-center gap-2.5 shadow-xs">
+          <div className="mb-6 p-3.5 rounded-2xl bg-[#EFECE6]/90 border border-[#C5A059]/30 flex flex-wrap items-center gap-2 shadow-2xs">
             <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider mr-1 flex items-center gap-1">
               <FiFilter className="w-3.5 h-3.5 text-[#1B5E3B]" /> Active Filters:
             </span>
@@ -569,7 +454,13 @@ function SareeCatalogContent() {
                 Category: {activeCategoryName || "Selected"}
                 <button
                   type="button"
-                  onClick={() => handleCategorySelect(activeCategory)}
+                  onClick={() => {
+                    setActiveCategory("");
+                    setTempCategory("");
+                    setActiveSubCategory("");
+                    setTempSubCategory("");
+                    router.push("/sarees");
+                  }}
                   className="hover:text-rose-600 transition-colors cursor-pointer"
                 >
                   <FiX className="w-3.5 h-3.5" />
@@ -579,23 +470,14 @@ function SareeCatalogContent() {
 
             {activeSubCategory && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C5A059]/20 text-[#8B6B23] text-xs font-bold border border-[#C5A059]/30">
-                SubCategory: {activeSubCategoryName || "Selected"}
+                Subcategory: {activeSubCategoryName || "Selected"}
                 <button
                   type="button"
-                  onClick={() => handleSubCategorySelect(activeSubCategory)}
-                  className="hover:text-rose-600 transition-colors cursor-pointer"
-                >
-                  <FiX className="w-3.5 h-3.5" />
-                </button>
-              </span>
-            )}
-
-            {selectedFabric && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-100 text-zinc-800 text-xs font-bold border border-stone-300">
-                Fabric: {selectedFabric}
-                <button
-                  type="button"
-                  onClick={() => setSelectedFabric("")}
+                  onClick={() => {
+                    setActiveSubCategory("");
+                    setTempSubCategory("");
+                    router.push(activeCategory ? `/sarees?category=${activeCategory}` : "/sarees");
+                  }}
                   className="hover:text-rose-600 transition-colors cursor-pointer"
                 >
                   <FiX className="w-3.5 h-3.5" />
@@ -612,7 +494,8 @@ function SareeCatalogContent() {
                   onClick={() => {
                     setMinPrice("");
                     setMaxPrice("");
-                    setActivePriceRange("");
+                    setTempMinPrice("");
+                    setTempMaxPrice("");
                   }}
                   className="hover:text-rose-600 transition-colors cursor-pointer"
                 >
@@ -626,169 +509,127 @@ function SareeCatalogContent() {
                 Search: "{searchQuery}"
                 <button
                   type="button"
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => {
+                    setSearchQuery("");
+                    router.push("/sarees");
+                  }}
                   className="hover:text-rose-600 transition-colors cursor-pointer"
                 >
                   <FiX className="w-3.5 h-3.5" />
                 </button>
               </span>
             )}
-
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              className="text-xs text-rose-600 hover:text-rose-800 font-bold underline ml-auto cursor-pointer"
-            >
-              Clear All Filters
-            </button>
           </div>
         )}
 
-        {/* TOP CONTROL BAR & SORT OPTIONS */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mb-8 bg-white p-4 rounded-2xl border border-stone-200 shadow-xs">
-          <div className="flex items-center justify-between md:justify-start gap-3">
-            <span className="font-serif font-bold text-base text-[#1B5E3B]">
-              {products.length} {products.length === 1 ? "Saree" : "Sarees"} Found
-            </span>
+        {/* RESULTS HEADER & PRODUCT COUNT */}
+        <div ref={productSectionRef} className="flex items-center justify-between gap-4 mb-6 pt-2">
+          <div>
+            <h2 className="font-serif font-bold text-xl sm:text-2xl text-[#1B5E3B]">
+              Handcrafted Sarees
+            </h2>
+            <p className="text-xs text-zinc-500 font-medium mt-0.5">
+              Showing {totalProducts === 0 ? 0 : (currentPage - 1) * 10 + 1}–
+              {Math.min(currentPage * 10, totalProducts)} of {totalProducts} Sarees (10 per page)
+            </p>
+          </div>
+        </div>
 
-            {/* Mobile Filter Drawer Button */}
+        {/* PRODUCT CARDS GRID */}
+        {loading ? (
+          <ProductGridSkeleton count={10} />
+        ) : products.length === 0 ? (
+          <div className="bg-[#EFECE6] rounded-3xl p-10 sm:p-16 border border-[#C5A059]/30 text-center max-w-lg mx-auto my-6 shadow-xs space-y-4">
+            <div className="w-16 h-16 bg-[#1B5E3B]/10 text-[#1B5E3B] rounded-full flex items-center justify-center mx-auto">
+              <FiBox className="w-8 h-8 text-[#C5A059]" />
+            </div>
+            <h3 className="font-serif font-bold text-2xl text-[#222222]">
+              No Sarees Found
+            </h3>
+            <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed">
+              We couldn't find any sarees matching your selected category, price range, or search criteria.
+            </p>
             <button
               type="button"
-              onClick={() => setMobileFilterOpen(true)}
-              className="lg:hidden inline-flex items-center gap-2 px-3 py-1.5 bg-[#0F2C24] text-[#C5A059] rounded-xl text-xs font-bold cursor-pointer"
+              onClick={handleResetFilters}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#1B5E3B] text-white font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-[#14462B] transition-all shadow-md cursor-pointer"
             >
-              <FiFilter className="w-3.5 h-3.5" />
-              <span>Filters</span>
+              <FiRefreshCw className="w-4 h-4" />
+              <span>View All Sarees</span>
             </button>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Quick Sort Buttons */}
-            <div className="flex items-center gap-1 bg-[#F5F2EB] p-1 rounded-xl border border-stone-200">
-              <button
-                type="button"
-                onClick={() => setSortBy("price_asc")}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  sortBy === "price_asc"
-                    ? "bg-[#1B5E3B] text-white shadow-xs"
-                    : "text-zinc-700 hover:text-[#1B5E3B]"
-                }`}
-              >
-                <FiTrendingUp className="w-3.5 h-3.5" />
-                <span>Price: Low to High</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSortBy("price_desc")}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  sortBy === "price_desc"
-                    ? "bg-[#1B5E3B] text-white shadow-xs"
-                    : "text-zinc-700 hover:text-[#1B5E3B]"
-                }`}
-              >
-                <FiTrendingDown className="w-3.5 h-3.5" />
-                <span>Price: High to Low</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSortBy("newest")}
-                className={`hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  sortBy === "newest"
-                    ? "bg-[#1B5E3B] text-white shadow-xs"
-                    : "text-zinc-700 hover:text-[#1B5E3B]"
-                }`}
-              >
-                <FiRefreshCw className="w-3.5 h-3.5" />
-                <span>Newest</span>
-              </button>
-            </div>
-
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="bg-[#F5F2EB] border border-stone-300 rounded-xl px-3 py-2 text-xs font-bold text-[#222222] focus:outline-none focus:border-[#1B5E3B]"
-            >
-              <option value="newest">Newest Arrivals</option>
-              <option value="price_asc">Price: Low to High</option>
-              <option value="price_desc">Price: High to Low</option>
-              <option value="name">Name (A-Z)</option>
-            </select>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-6">
+            {products.map((product) => (
+              <ProductCard key={product._id} product={product} />
+            ))}
           </div>
-        </div>
+        )}
 
-        {/* MAIN LAYOUT: SIDEBAR + PRODUCT GRID */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-          {/* DESKTOP SIDEBAR FILTERS */}
-          <div className="hidden lg:block lg:col-span-1 sticky top-24">
-            {renderSidebarFilters()}
-          </div>
+        {/* ========================================================================= */}
+        {/* PAGINATION CONTROLS (ALWAYS VISIBLE WHEN PRODUCTS ARE PRESENT)             */}
+        {/* ========================================================================= */}
+        {!loading && totalProducts > 0 && (
+          <div className="mt-12 pt-8 border-t border-[#C5A059]/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-zinc-600 font-semibold">
+              Page <span className="text-[#1B5E3B] font-bold">{currentPage}</span> of{" "}
+              <span className="text-zinc-800 font-bold">{totalPages}</span> ({totalProducts} {totalProducts === 1 ? "saree" : "total sarees"})
+            </p>
 
-          {/* MOBILE FILTER OVERLAY DRAWER */}
-          {mobileFilterOpen && (
-            <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end bg-black/60 backdrop-blur-xs">
-              <div className="bg-[#F5F2EB] rounded-t-3xl p-4 max-h-[85vh] overflow-y-auto space-y-4 no-lenis">
-                <div className="flex items-center justify-between pb-2 border-b border-stone-300">
-                  <h3 className="font-serif font-bold text-lg text-[#1B5E3B]">Filter Products</h3>
+            <div className="flex items-center gap-1.5">
+              {/* Previous Button */}
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`flex items-center gap-1 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
+                  currentPage === 1
+                    ? "bg-[#EFECE6] text-zinc-400 border-stone-300/60 cursor-not-allowed"
+                    : "bg-[#F5F2EB] text-zinc-800 border-[#C5A059]/40 hover:bg-[#1B5E3B] hover:text-white hover:border-[#1B5E3B] shadow-2xs cursor-pointer"
+                }`}
+              >
+                <FiChevronLeft className="w-4 h-4" />
+                <span>Prev</span>
+              </button>
+
+              {/* Page Number Buttons */}
+              {Array.from({ length: Math.max(1, totalPages) }, (_, i) => i + 1).map((pageNum) => {
+                const isActive = pageNum === currentPage;
+                return (
                   <button
+                    key={pageNum}
                     type="button"
-                    onClick={() => setMobileFilterOpen(false)}
-                    className="p-2 text-zinc-600 hover:text-zinc-900"
+                    onClick={() => handlePageChange(pageNum)}
+                    disabled={isActive}
+                    className={`w-9 h-9 rounded-xl text-xs font-bold transition-all flex items-center justify-center border ${
+                      isActive
+                        ? "bg-[#1B5E3B] text-white border-[#1B5E3B] shadow-md cursor-default"
+                        : "bg-[#F5F2EB] text-zinc-700 border-[#C5A059]/40 hover:bg-[#1B5E3B]/10 hover:text-[#1B5E3B] cursor-pointer"
+                    }`}
                   >
-                    <FiX className="w-6 h-6" />
+                    {pageNum}
                   </button>
-                </div>
+                );
+              })}
 
-                {renderSidebarFilters()}
-
-                <button
-                  type="button"
-                  onClick={() => setMobileFilterOpen(false)}
-                  className="w-full py-3 bg-[#1B5E3B] text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md cursor-pointer"
-                >
-                  Apply Filters ({products.length} Products)
-                </button>
-              </div>
+              {/* Next Button */}
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages || totalPages <= 1}
+                className={`flex items-center gap-1 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
+                  currentPage === totalPages || totalPages <= 1
+                    ? "bg-[#EFECE6] text-zinc-400 border-stone-300/60 cursor-not-allowed"
+                    : "bg-[#F5F2EB] text-zinc-800 border-[#C5A059]/40 hover:bg-[#1B5E3B] hover:text-white hover:border-[#1B5E3B] shadow-2xs cursor-pointer"
+                }`}
+              >
+                <span>Next</span>
+                <FiChevronRight className="w-4 h-4" />
+              </button>
             </div>
-          )}
-
-          {/* PRODUCT CARDS GRID */}
-          <div className="lg:col-span-3">
-            {loading ? (
-              /* LOADING SKELETON GRID */
-              <ProductGridSkeleton count={6} />
-            ) : products.length === 0 ? (
-              /* EMPTY CATALOG STATE */
-              <div className="bg-white rounded-3xl p-10 sm:p-16 border border-stone-200 text-center max-w-lg mx-auto my-6 shadow-xs space-y-4">
-                <div className="w-16 h-16 bg-[#1B5E3B]/10 text-[#1B5E3B] rounded-full flex items-center justify-center mx-auto">
-                  <FiBox className="w-8 h-8 text-[#C5A059]" />
-                </div>
-                <h3 className="font-serif font-bold text-2xl text-[#222222]">
-                  No Sarees Found
-                </h3>
-                <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed">
-                  We couldn't find any sarees matching your selected filters or price range.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#1B5E3B] text-white font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-[#14462B] transition-all shadow-md cursor-pointer"
-                >
-                  <FiRefreshCw className="w-4 h-4" />
-                  <span>View All Sarees</span>
-                </button>
-              </div>
-            ) : (
-              /* PRODUCT CARDS GRID */
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
-                {products.map((product) => (
-                  <ProductCard key={product._id} product={product} />
-                ))}
-              </div>
-            )}
           </div>
-        </div>
+        )}
+
       </div>
     </div>
   );

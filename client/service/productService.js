@@ -14,7 +14,7 @@ export const fetchNewArrivals = async (limit = 8) => {
         sortBy: 'newest',
         isActive: true,
       },
-      timeout: 5000,
+      timeout: 10000,
     });
 
     if (response.data && response.data.success && Array.isArray(response.data.data)) {
@@ -34,7 +34,7 @@ export const fetchNewArrivals = async (limit = 8) => {
 export const fetchProductById = async (id) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/sarees/${id}`, {
-      timeout: 5000,
+      timeout: 10000,
     });
 
     if (response.data && response.data.success) {
@@ -55,15 +55,30 @@ export const fetchSarees = async (params = {}) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/sarees`, {
       params,
-      timeout: 5000,
+      timeout: 10000,
     });
     if (response.data && response.data.success) {
-      return response.data.data || [];
+      const list = Array.isArray(response.data.data) ? response.data.data : [];
+      list.total = response.data.total ?? list.length;
+      list.totalPages = response.data.totalPages ?? 1;
+      list.currentPage = response.data.currentPage ?? 1;
+      list.count = response.data.count ?? list.length;
+      return list;
     }
-    return [];
+    const emptyList = [];
+    emptyList.total = 0;
+    emptyList.totalPages = 1;
+    emptyList.currentPage = 1;
+    emptyList.count = 0;
+    return emptyList;
   } catch (error) {
     console.warn('ProductService: Failed to fetch sarees list.', error.message);
-    return [];
+    const emptyList = [];
+    emptyList.total = 0;
+    emptyList.totalPages = 1;
+    emptyList.currentPage = 1;
+    emptyList.count = 0;
+    return emptyList;
   }
 };
 
@@ -79,7 +94,7 @@ export const fetchMostLovedProducts = async (limit = 8) => {
         sortBy: 'popular',
         isActive: true,
       },
-      timeout: 5000,
+      timeout: 10000,
     });
 
     if (response.data && response.data.success && Array.isArray(response.data.data)) {

@@ -82,7 +82,7 @@ export default function AboutPage() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-36 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-[#C5A059]/50 shadow-md mb-4 text-[#C5A059]">
-            <FiSparkles className="text-xs" />
+            <FiStar className="text-xs" />
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.25em]">
               ESTABLISHED 1994 • HERITAGE SAREE HOUSE
             </span>
@@ -219,7 +219,7 @@ export default function AboutPage() {
 
             {/* Subtle Center Emblem */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-[#1B5E3B] text-[#C5A059] border-2 border-[#C5A059] flex items-center justify-center shadow-xl z-20 pointer-events-none">
-              <FiSparkles className="text-xl" />
+              <FiStar className="text-xl" />
             </div>
           </div>
 

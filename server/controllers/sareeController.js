@@ -334,13 +334,14 @@ const createSaree = async (req, res) => {
 };
 
 // ==========================================
-// 2. FETCH ALL SAREE PRODUCTS
+// 2. FETCH ALL SAREE PRODUCTS / SEARCH
 // @route   GET /api/sarees
 // ==========================================
 const getSarees = async (req, res) => {
   try {
     const {
       search,
+      q,
       category,
       subCategory,
       sareeType,
@@ -354,7 +355,7 @@ const getSarees = async (req, res) => {
       isActive,
       sortBy,
       page = 1,
-      limit = 20,
+      limit = 10,
     } = req.query;
 
     const filter = {};
@@ -407,26 +408,32 @@ const getSarees = async (req, res) => {
       if (maxPrice) filter.price.$lte = Number(maxPrice);
     }
 
-    if (search) {
-      const searchRegex = new RegExp(search, 'i');
+    const querySearchTerm = (search || q || '').trim();
+    if (querySearchTerm) {
+      const searchRegex = new RegExp(querySearchTerm, 'i');
       filter.$or = [
         { name: searchRegex },
         { SKU: searchRegex },
         { description: searchRegex },
+        { category: searchRegex },
         { subCategory: searchRegex },
         { sareeType: searchRegex },
         { fabric: searchRegex },
+        { pattern: searchRegex },
+        { occasion: searchRegex },
+        { workType: searchRegex },
       ];
     }
 
     const pageNum = parseInt(page, 10) || 1;
-    const limitNum = parseInt(limit, 10) || 20;
+    const limitNum = parseInt(limit, 10) || 10;
     const skip = (pageNum - 1) * limitNum;
 
     let sortOptions = { createdAt: -1 };
+    if (sortBy === 'newest' || sortBy === 'date_desc') sortOptions = { createdAt: -1 };
+    if (sortBy === 'oldest' || sortBy === 'date_asc') sortOptions = { createdAt: 1 };
     if (sortBy === 'price_asc') sortOptions = { price: 1 };
     if (sortBy === 'price_desc') sortOptions = { price: -1 };
-    if (sortBy === 'newest') sortOptions = { createdAt: -1 };
     if (sortBy === 'name') sortOptions = { name: 1 };
     if (sortBy === 'popular' || sortBy === 'most_loved') sortOptions = { favoriteCount: -1, salesCount: -1, createdAt: -1 };
 
@@ -449,6 +456,111 @@ const getSarees = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error while fetching saree products',
+      error: error.message,
+    });
+  }
+};
+
+// ==========================================
+// 2B. SEARCH SAREES CONTROLLER (Category, SubCategory, Name, Fabric)
+// @route   GET /api/sarees/search
+// ==========================================
+const searchSarees = async (req, res) => {
+  try {
+    const {
+      q,
+      search,
+      name,
+      category,
+      subCategory,
+      fabric,
+      sortBy,
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    const searchTerm = (q || search || name || '').trim();
+    const filter = { isActive: true };
+
+    const mongoose = require('mongoose');
+
+    if (category) {
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        const catObj = await Category.findById(category).lean();
+        const catName = catObj ? catObj.name : category;
+        filter.$or = [
+          { category: { $regex: new RegExp(category, 'i') } },
+          { category: { $regex: new RegExp(catName, 'i') } },
+        ];
+      } else {
+        filter.category = { $regex: new RegExp(category, 'i') };
+      }
+    }
+
+    if (subCategory) {
+      if (mongoose.Types.ObjectId.isValid(subCategory)) {
+        const subObj = await SubCategory.findById(subCategory).lean();
+        const subName = subObj ? subObj.name : subCategory;
+        filter.$or = [
+          { subCategory: { $regex: new RegExp(subCategory, 'i') } },
+          { subCategory: { $regex: new RegExp(subName, 'i') } },
+        ];
+      } else {
+        filter.subCategory = { $regex: new RegExp(subCategory, 'i') };
+      }
+    }
+
+    if (fabric) {
+      filter.fabric = { $regex: new RegExp(fabric, 'i') };
+    }
+
+    if (searchTerm) {
+      const searchRegex = new RegExp(searchTerm, 'i');
+      filter.$or = [
+        { name: searchRegex },
+        { category: searchRegex },
+        { subCategory: searchRegex },
+        { sareeType: searchRegex },
+        { fabric: searchRegex },
+        { description: searchRegex },
+        { pattern: searchRegex },
+        { occasion: searchRegex },
+        { workType: searchRegex },
+        { SKU: searchRegex },
+      ];
+    }
+
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+    const skip = (pageNum - 1) * limitNum;
+
+    let sortOptions = { createdAt: -1 };
+    if (sortBy === 'newest' || sortBy === 'date_desc') sortOptions = { createdAt: -1 };
+    if (sortBy === 'oldest' || sortBy === 'date_asc') sortOptions = { createdAt: 1 };
+    if (sortBy === 'price_asc') sortOptions = { price: 1 };
+    if (sortBy === 'price_desc') sortOptions = { price: -1 };
+    if (sortBy === 'name') sortOptions = { name: 1 };
+    if (sortBy === 'popular' || sortBy === 'most_loved') sortOptions = { favoriteCount: -1, salesCount: -1, createdAt: -1 };
+
+    const total = await Saree.countDocuments(filter);
+    const sarees = await Saree.find(filter)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limitNum);
+
+    res.status(200).json({
+      success: true,
+      count: sarees.length,
+      total,
+      totalPages: Math.ceil(total / limitNum),
+      currentPage: pageNum,
+      data: sarees,
+    });
+  } catch (error) {
+    console.error('Search Sarees Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while searching saree products',
       error: error.message,
     });
   }
@@ -617,6 +729,7 @@ const deleteSaree = async (req, res) => {
 module.exports = {
   createSaree,
   getSarees,
+  searchSarees,
   getSareeById,
   updateSaree,
   deleteSaree,
