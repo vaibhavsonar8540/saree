@@ -1,0 +1,16 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow private e-commerce transactional paths
+Disallow: /cart
+Disallow: /checkout
+Disallow: /payment
+Disallow: /order
+Disallow: /wishlist
+Disallow: /favourites
+Disallow: /api/
+Disallow: /_next/
+
+# Sitemap Location
+Sitemap: https://anjalicreation.com/sitemap.xml
