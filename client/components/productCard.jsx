@@ -160,58 +160,58 @@ const ProductCard = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* IMAGE CONTAINER WITH COMPACT MOBILE ASPECT RATIO */}
-      <div className="relative w-full aspect-[4/5] sm:aspect-3/4 bg-stone-100 overflow-hidden shrink-0">
+      {/* IMAGE CONTAINER WITH COMPACT ASPECT RATIO */}
+      <div className="relative w-full aspect-square sm:aspect-3/4 bg-stone-100 overflow-hidden shrink-0">
         <Link href={`/product/${_id}`} className="block w-full h-full relative">
           <CustomImage
             srcAttr={displayImage}
             altAttr={productTitle}
             fill={true}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
           />
         </Link>
 
-        {/* Badges Overlay */}
-        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 flex flex-col gap-1 pointer-events-none">
+        {/* Sleek Compact Badges Overlay */}
+        <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 z-10 flex flex-col items-start gap-1 pointer-events-none">
           {calcDiscount > 0 && (
-            <span className="px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-[#1B5E3B] text-white text-[9px] sm:text-[10px] font-bold tracking-wider uppercase shadow-xs">
+            <span className="px-1.5 py-0.5 rounded-md bg-[#1B5E3B] text-white text-[8px] sm:text-[9px] font-extrabold tracking-wider uppercase shadow-2xs">
               {calcDiscount}% OFF
             </span>
           )}
           {fabric && (
-            <span className="px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-[#C5A059] text-zinc-900 text-[9px] sm:text-[10px] font-bold tracking-wide uppercase shadow-xs">
+            <span className="px-1.5 py-0.5 rounded-md bg-[#C5A059] text-zinc-900 text-[8px] sm:text-[9px] font-extrabold tracking-wide uppercase shadow-2xs">
               {fabric}
             </span>
           )}
         </div>
 
         {/* Action Buttons: Wishlist & Quick View */}
-        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 flex flex-col gap-1.5">
+        <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-10 flex flex-col gap-1">
           <button
             type="button"
             onClick={handleWishlistClick}
-            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
+            className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition-all duration-300 shadow-xs ${
               isWishlisted
                 ? "bg-[#9C2766] text-white"
                 : "bg-white/90 text-zinc-700 hover:bg-[#1B5E3B] hover:text-white"
             }`}
             aria-label="Wishlist"
           >
-            <FiHeart className={`text-xs sm:text-sm ${isWishlisted ? "fill-current" : ""}`} />
+            <FiHeart className={`text-[10px] sm:text-xs ${isWishlisted ? "fill-current" : ""}`} />
           </button>
 
           <Link
             href={`/product/${_id}`}
-            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 text-zinc-700 hover:bg-[#1B5E3B] hover:text-white flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300 shadow-md"
+            className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/90 text-zinc-700 hover:bg-[#1B5E3B] hover:text-white flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300 shadow-xs"
             aria-label="Quick View"
           >
-            <FiEye className="text-xs sm:text-sm" />
+            <FiEye className="text-[10px] sm:text-xs" />
           </Link>
         </div>
       </div>
 
       {/* DETAILS CONTAINER */}
-      <div className="w-full p-2.5 sm:p-4 flex flex-col justify-between bg-white flex-1 space-y-2 sm:space-y-3">
+      <div className="w-full p-2.5 sm:p-3 flex flex-col justify-between bg-white flex-1 space-y-1.5 sm:space-y-2">
         <div className="space-y-1">
           {/* Top Header: Category Name & Available Color Swatches */}
           <div className="flex items-center justify-between gap-2">
@@ -239,43 +239,42 @@ const ProductCard = ({
             )}
           </div>
 
-          {/* Product Title */}
+          {/* Product Title (1 line) */}
           <Link href={`/product/${_id}`}>
-            <h3 className="font-serif font-bold text-xs sm:text-sm text-[#222222] hover:text-[#1B5E3B] line-clamp-2 leading-snug transition-colors">
+            <h3 className="font-serif font-bold text-xs sm:text-sm text-[#222222] hover:text-[#1B5E3B] line-clamp-1 leading-tight transition-colors">
               {productTitle}
             </h3>
           </Link>
 
-          {/* Short Description (Clamped to 3 lines) */}
+          {/* Short Description (Clamped to 1 line) */}
           {description && (
-            <p className="text-[11px] sm:text-xs text-zinc-500 line-clamp-3 leading-relaxed mt-1">
+            <p className="text-[11px] sm:text-xs text-zinc-500 line-clamp-1 leading-snug mt-0.5">
               {description}
             </p>
           )}
         </div>
 
         {/* Bottom Bar: Price & Add To Cart Button */}
-        <div className="pt-2 sm:pt-2.5 border-t border-stone-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 mt-auto">
-          <div className="flex items-baseline justify-between sm:flex-col gap-1">
-            <div className="flex items-baseline gap-1 flex-wrap">
-              <span className="font-serif font-bold text-sm sm:text-base text-[#1B5E3B]">
-                ₹{finalPrice.toLocaleString("en-IN")}
+        <div className="border-t border-stone-100 flex flex-col gap-1.5 mt-auto">
+          {/* Price and Discounted/Compare Price in Flex */}
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="font-serif font-bold text-sm sm:text-base text-[#1B5E3B]">
+              ₹{finalPrice.toLocaleString("en-IN")}
+            </span>
+            {comparePrice > finalPrice && (
+              <span className="text-[10px] sm:text-xs text-zinc-400 line-through">
+                ₹{comparePrice.toLocaleString("en-IN")}
               </span>
-              {comparePrice > finalPrice && (
-                <span className="text-[10px] sm:text-xs text-zinc-400 line-through">
-                  ₹{comparePrice.toLocaleString("en-IN")}
-                </span>
-              )}
-            </div>
-            <span className="text-[8px] sm:text-[9px] text-zinc-400 uppercase tracking-wider font-medium">Taxes Included</span>
+            )}
           </div>
 
+          {/* Full Width Add To Cart Button Below Price */}
           <Button
             variant="primary"
             size="sm"
             onClick={handleCartClick}
             icon={FiShoppingCart}
-            className="w-full sm:w-auto rounded-lg sm:rounded-xl px-2.5 py-2 sm:px-3 sm:py-2 text-[10px] sm:text-[11px] font-bold bg-[#1B5E3B] hover:bg-[#15472c] shrink-0"
+            className="w-full rounded-lg sm:rounded-xl px-2.5 py-2 text-[10px] sm:text-[11px] font-bold bg-[#1B5E3B] hover:bg-[#15472c] justify-center"
           >
             Add To Cart
           </Button>

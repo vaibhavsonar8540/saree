@@ -197,9 +197,6 @@ export default function CartPage() {
               Review your luxury handcrafted saree selections before checkout.
             </p>
           </div>
-          <span className="text-xs sm:text-sm font-semibold text-zinc-600 bg-white px-3.5 py-1.5 rounded-full border border-stone-200 shadow-2xs">
-            {cartItems.length} {cartItems.length === 1 ? "Item" : "Items"}
-          </span>
         </div>
 
         {cartItems.length === 0 ? (
@@ -459,11 +456,6 @@ export default function CartPage() {
                   <span>Proceed to Checkout</span>
                   <FiArrowRight className="w-4 h-4" />
                 </Link>
-
-                <p className="text-[10px] text-center text-zinc-400 flex items-center justify-center gap-1">
-                  <FiShield className="w-3.5 h-3.5 text-[#1B5E3B]" />
-                  256-Bit SSL Encrypted & Safe Checkout
-                </p>
               </div>
             </div>
 

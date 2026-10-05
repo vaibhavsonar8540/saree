@@ -6,6 +6,9 @@ import Link from "next/link";
 import ProductCard from "@/components/productCard";
 import { ProductGridSkeleton } from "@/components/Skeleton";
 import { fetchSarees } from "@/service/productService";
+import HeroBanner from "@/components/heroBanner";
+import sareeDesktopImg from "@/assets/images/saree/saree-desktop.webp";
+import sareeMobileImg from "@/assets/images/saree/saree-mobile.webp";
 import axios from "axios";
 import {
   FiFilter,
@@ -63,6 +66,18 @@ function SareeCatalogContent() {
   const [tempSortBy, setTempSortBy] = useState("date_desc");
   const [tempMinPrice, setTempMinPrice] = useState("");
   const [tempMaxPrice, setTempMaxPrice] = useState("");
+
+  // State for Collapsible Slide Card Filter
+  const [isFilterCardOpen, setIsFilterCardOpen] = useState(false);
+
+  const activeFiltersCount = [
+    activeCategory,
+    activeSubCategory,
+    selectedFabric,
+    searchQuery,
+    minPrice,
+    maxPrice,
+  ].filter(Boolean).length;
 
   // Metadata Display Names
   const [activeCategoryName, setActiveCategoryName] = useState("");
@@ -196,6 +211,7 @@ function SareeCatalogContent() {
     setMinPrice(tempMinPrice);
     setMaxPrice(tempMaxPrice);
     setCurrentPage(1);
+    setIsFilterCardOpen(false);
 
     // Sync URL if category or subcategory changed
     if (tempSubCategory) {
@@ -224,6 +240,7 @@ function SareeCatalogContent() {
     setMaxPrice("");
     setSortBy("date_desc");
     setCurrentPage(1);
+    setIsFilterCardOpen(false);
     router.push("/sarees");
   };
 
@@ -255,192 +272,217 @@ function SareeCatalogContent() {
 
   return (
     <div className="min-h-screen bg-[#F5F2EB] text-[#222222] font-sans pb-24">
-      {/* BREADCRUMB NAVIGATION */}
-      <div className="bg-[#EFECE6] border-b border-[#C5A059]/20 py-3.5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-zinc-500 font-medium overflow-x-auto whitespace-nowrap">
-            <Link href="/" className="hover:text-[#1B5E3B] transition-colors">
-              Home
-            </Link>
-            <FiChevronRight className="w-3 h-3 text-zinc-400 shrink-0" />
-            <Link href="/sarees" onClick={handleResetFilters} className="hover:text-[#1B5E3B] transition-colors">
-              Sarees Catalog
-            </Link>
-            {(activeCategory || activeSubCategory || searchQuery) && (
-              <>
-                <FiChevronRight className="w-3 h-3 text-zinc-400 shrink-0" />
-                <span className="text-[#1B5E3B] font-bold">{titleName}</span>
-              </>
-            )}
-          </div>
-
-          <Link
-            href="/"
-            className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-[#1B5E3B] hover:underline"
-          >
-            <FiArrowLeft className="w-3.5 h-3.5" />
-            Back to Home
-          </Link>
-        </div>
-      </div>
-
       {/* HERO BANNER */}
-      <div className="bg-[#0F2C24] text-white py-8 sm:py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#C5A059_1px,transparent_1px)] bg-size-[16px_16px]" />
-        <div className="max-w-7xl mx-auto relative z-10 space-y-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#C5A059]/20 border border-[#C5A059]/40 text-[#C5A059] text-[10px] font-bold uppercase tracking-widest">
-            <FiGrid className="w-3 h-3" />
-            <span>Luxury Saree Collection</span>
-          </div>
-          <h1 className="font-serif font-bold text-2xl sm:text-4xl text-[#F5F2EB] tracking-tight">
-            {titleName}
-          </h1>
-          <p className="text-xs sm:text-sm text-stone-300 max-w-2xl font-light leading-relaxed">
-            {subtitleName}
-          </p>
-        </div>
-      </div>
+      <HeroBanner
+        src={sareeDesktopImg}
+        mobileSrc={sareeMobileImg}
+        align="left"
+        badge="LUXURY SAREE COLLECTION"
+        badgeClass="inline-block px-3.5 py-1 rounded-full border border-[#C5A059]/80 bg-black/40 text-[#C5A059] text-[10px] sm:text-xs font-semibold tracking-[0.2em] uppercase backdrop-blur-xs shadow-md"
+        title={titleName}
+        titleClass="text-2xl sm:text-4xl lg:text-5xl font-serif font-bold text-white leading-tight tracking-tight drop-shadow-md"
+        desc={subtitleName}
+        descClass="text-xs sm:text-base text-zinc-200 max-w-xl font-normal leading-relaxed drop-shadow-xs"
+        overlayClass="bg-gradient-to-r from-black/80 via-black/50 to-transparent"
+        className="w-full shadow-md"
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         
-        {/* ========================================================================= */}
-        {/* HORIZONTAL FILTER BAR (MATCHING WEBSITE PALETTE)                          */}
-        {/* ========================================================================= */}
-        <div className="mb-8 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-[#EFECE6] border border-[#C5A059]/30 shadow-xs space-y-4">
-          <form onSubmit={handleApplyFilters} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              
-              {/* 1. FILTER BY CATEGORY */}
-              <div className="space-y-1.5">
-                <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider text-zinc-600 uppercase">
-                  FILTER BY CATEGORY
-                </label>
-                <div className="relative">
-                  <select
-                    value={tempCategory}
-                    onChange={(e) => {
-                      setTempCategory(e.target.value);
-                      setTempSubCategory("");
-                    }}
-                    className="w-full appearance-none bg-[#F5F2EB] border border-[#C5A059]/40 hover:border-[#1B5E3B]/40 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium focus:outline-none focus:border-[#1B5E3B] focus:ring-1 focus:ring-[#1B5E3B]/20 transition-all cursor-pointer pr-10"
-                  >
-                    <option value="">
-                      All Categories ({categoriesList.length})
-                    </option>
-                    {categoriesList.map((cat) => (
-                      <option key={cat._id} value={cat._id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                  <FiChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-                </div>
+        {/* HEADER ROW WITH TITLE, DESCRIPTION & FILTER BUTTON */}
+        <div ref={productSectionRef} className="flex items-start sm:items-center justify-between gap-4 mb-5 pb-3 border-b border-[#C5A059]/20">
+          <div>
+            <h2 className="font-serif font-bold text-xl sm:text-2xl text-[#1B5E3B] tracking-tight">
+              The Saree Collection
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-600 font-medium mt-0.5">
+              Discover timeless sarees crafted for every occasion.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsFilterCardOpen(!isFilterCardOpen)}
+            className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-[#1B5E3B] hover:bg-[#14462B] text-white rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md cursor-pointer shrink-0"
+          >
+            <FiSliders className="w-4 h-4 text-white" />
+            <span>Filter</span>
+            {activeFiltersCount > 0 && (
+              <span className="w-4 h-4 rounded-full bg-white text-[#1B5E3B] text-[10px] font-bold flex items-center justify-center ml-0.5">
+                {activeFiltersCount}
+              </span>
+            )}
+            <FiChevronDown
+              className={`w-4 h-4 text-white transition-transform duration-300 ml-0.5 ${
+                isFilterCardOpen ? "rotate-180" : "rotate-0"
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* COLLAPSIBLE SLIDE FILTER CARD (SLIDES DOWN BELOW THE HEADER) */}
+        {isFilterCardOpen && (
+          <div className="mb-6 p-5 sm:p-6 rounded-2xl bg-[#EFECE6] border border-[#C5A059]/40 shadow-md animate-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-[#C5A059]/30 mb-4">
+              <div className="flex items-center gap-2">
+                <FiSliders className="w-4 h-4 text-[#1B5E3B]" />
+                <h3 className="font-serif font-bold text-sm sm:text-base text-[#222222]">
+                  Filter Sarees
+                </h3>
               </div>
-
-              {/* 2. FILTER BY SUBCATEGORY */}
-              <div className="space-y-1.5">
-                <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider text-zinc-600 uppercase">
-                  FILTER BY SUBCATEGORY
-                </label>
-                <div className="relative">
-                  <select
-                    value={tempSubCategory}
-                    onChange={(e) => setTempSubCategory(e.target.value)}
-                    disabled={!tempCategory && availableSubCategories.length === 0}
-                    className={`w-full appearance-none bg-[#F5F2EB] border border-[#C5A059]/40 hover:border-[#1B5E3B]/40 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium focus:outline-none focus:border-[#1B5E3B] focus:ring-1 focus:ring-[#1B5E3B]/20 transition-all pr-10 ${
-                      !tempCategory && availableSubCategories.length === 0
-                        ? "opacity-60 cursor-not-allowed text-zinc-400"
-                        : "cursor-pointer"
-                    }`}
-                  >
-                    {!tempCategory ? (
-                      <option value="">Select a category first</option>
-                    ) : availableSubCategories.length === 0 ? (
-                      <option value="">No subcategories</option>
-                    ) : (
-                      <>
-                        <option value="">All Subcategories ({availableSubCategories.length})</option>
-                        {availableSubCategories.map((sub) => (
-                          <option key={sub._id} value={sub._id}>
-                            {sub.name}
-                          </option>
-                        ))}
-                      </>
-                    )}
-                  </select>
-                  <FiChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-                </div>
-              </div>
-
-              {/* 3. SORT BY DATE */}
-              <div className="space-y-1.5">
-                <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider text-zinc-600 uppercase">
-                  SORT BY DATE
-                </label>
-                <div className="relative">
-                  <select
-                    value={tempSortBy}
-                    onChange={(e) => setTempSortBy(e.target.value)}
-                    className="w-full appearance-none bg-[#F5F2EB] border border-[#C5A059]/40 hover:border-[#1B5E3B]/40 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium focus:outline-none focus:border-[#1B5E3B] focus:ring-1 focus:ring-[#1B5E3B]/20 transition-all cursor-pointer pr-10"
-                  >
-                    <option value="date_desc">Newly Uploaded</option>
-                    <option value="date_asc">Oldest First</option>
-                    <option value="price_asc">Price: Low to High</option>
-                    <option value="price_desc">Price: High to Low</option>
-                    <option value="popular">Most Popular</option>
-                  </select>
-                  <FiChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-                </div>
-              </div>
-
-              {/* 4. PRICE RANGE (₹) */}
-              <div className="space-y-1.5">
-                <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider text-zinc-600 uppercase">
-                  PRICE RANGE (₹)
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    placeholder="Min"
-                    value={tempMinPrice}
-                    onChange={(e) => setTempMinPrice(e.target.value)}
-                    className="w-full bg-[#F5F2EB] border border-[#C5A059]/40 hover:border-[#1B5E3B]/40 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium focus:outline-none focus:border-[#1B5E3B] focus:ring-1 focus:ring-[#1B5E3B]/20 transition-all"
-                  />
-                  <span className="text-zinc-400 font-bold">-</span>
-                  <input
-                    type="number"
-                    placeholder="Max"
-                    value={tempMaxPrice}
-                    onChange={(e) => setTempMaxPrice(e.target.value)}
-                    className="w-full bg-[#F5F2EB] border border-[#C5A059]/40 hover:border-[#1B5E3B]/40 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium focus:outline-none focus:border-[#1B5E3B] focus:ring-1 focus:ring-[#1B5E3B]/20 transition-all"
-                  />
-                </div>
-              </div>
-
-            </div>
-
-            {/* BUTTON ROW AT THE BOTTOM RIGHT */}
-            <div className="flex items-center justify-end gap-3 pt-2">
-              {isFilterActive && (
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="px-4 py-2.5 text-xs font-bold text-zinc-600 hover:text-rose-600 transition-colors flex items-center gap-1.5 cursor-pointer"
-                >
-                  <FiRotateCcw className="w-3.5 h-3.5" />
-                  <span>RESET FILTERS</span>
-                </button>
-              )}
-
               <button
-                type="submit"
-                className="px-7 py-2.5 bg-black hover:bg-[#1B5E3B] text-white text-xs font-bold uppercase tracking-wider rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer"
+                type="button"
+                onClick={() => setIsFilterCardOpen(false)}
+                className="p-1 rounded-lg text-zinc-500 hover:text-zinc-800 hover:bg-stone-200/60 transition-colors cursor-pointer"
+                aria-label="Close filters"
               >
-                APPLY FILTERS
+                <FiX className="w-4 h-4" />
               </button>
             </div>
-          </form>
-        </div>
+
+            <form onSubmit={handleApplyFilters} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                {/* 1. FILTER BY CATEGORY */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider text-zinc-600 uppercase">
+                    FILTER BY CATEGORY
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={tempCategory}
+                      onChange={(e) => {
+                        setTempCategory(e.target.value);
+                        setTempSubCategory("");
+                      }}
+                      className="w-full appearance-none bg-[#F5F2EB] border border-[#C5A059]/40 hover:border-[#1B5E3B]/40 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium focus:outline-none focus:border-[#1B5E3B] focus:ring-1 focus:ring-[#1B5E3B]/20 transition-all cursor-pointer pr-10 shadow-2xs"
+                    >
+                      <option value="">
+                        All Categories ({categoriesList.length})
+                      </option>
+                      {categoriesList.map((cat) => (
+                        <option key={cat._id} value={cat._id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                    <FiChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* 2. FILTER BY SUBCATEGORY */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider text-zinc-600 uppercase">
+                    FILTER BY SUBCATEGORY
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={tempSubCategory}
+                      onChange={(e) => setTempSubCategory(e.target.value)}
+                      disabled={!tempCategory && availableSubCategories.length === 0}
+                      className={`w-full appearance-none bg-[#F5F2EB] border border-[#C5A059]/40 hover:border-[#1B5E3B]/40 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium focus:outline-none focus:border-[#1B5E3B] focus:ring-1 focus:ring-[#1B5E3B]/20 transition-all pr-10 shadow-2xs ${
+                        !tempCategory && availableSubCategories.length === 0
+                          ? "opacity-60 cursor-not-allowed text-zinc-400"
+                          : "cursor-pointer"
+                      }`}
+                    >
+                      {!tempCategory ? (
+                        <option value="">Select a category first</option>
+                      ) : availableSubCategories.length === 0 ? (
+                        <option value="">No subcategories</option>
+                      ) : (
+                        <>
+                          <option value="">All Subcategories ({availableSubCategories.length})</option>
+                          {availableSubCategories.map((sub) => (
+                            <option key={sub._id} value={sub._id}>
+                              {sub.name}
+                            </option>
+                          ))}
+                        </>
+                      )}
+                    </select>
+                    <FiChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* 3. SORT BY */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider text-zinc-600 uppercase">
+                    SORT BY
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={tempSortBy}
+                      onChange={(e) => setTempSortBy(e.target.value)}
+                      className="w-full appearance-none bg-[#F5F2EB] border border-[#C5A059]/40 hover:border-[#1B5E3B]/40 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium focus:outline-none focus:border-[#1B5E3B] focus:ring-1 focus:ring-[#1B5E3B]/20 transition-all cursor-pointer pr-10 shadow-2xs"
+                    >
+                      <option value="date_desc">Newly Uploaded</option>
+                      <option value="date_asc">Oldest First</option>
+                      <option value="price_asc">Price: Low to High</option>
+                      <option value="price_desc">Price: High to Low</option>
+                      <option value="popular">Most Popular</option>
+                    </select>
+                    <FiChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* 4. PRICE RANGE (₹) */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider text-zinc-600 uppercase">
+                    PRICE RANGE (₹)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      placeholder="Min"
+                      value={tempMinPrice}
+                      onChange={(e) => setTempMinPrice(e.target.value)}
+                      className="w-full bg-[#F5F2EB] border border-[#C5A059]/40 hover:border-[#1B5E3B]/40 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium focus:outline-none focus:border-[#1B5E3B] focus:ring-1 focus:ring-[#1B5E3B]/20 transition-all shadow-2xs"
+                    />
+                    <span className="text-zinc-400 font-bold">-</span>
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      value={tempMaxPrice}
+                      onChange={(e) => setTempMaxPrice(e.target.value)}
+                      className="w-full bg-[#F5F2EB] border border-[#C5A059]/40 hover:border-[#1B5E3B]/40 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-zinc-800 font-medium focus:outline-none focus:border-[#1B5E3B] focus:ring-1 focus:ring-[#1B5E3B]/20 transition-all shadow-2xs"
+                    />
+                  </div>
+                </div>
+
+              </div>
+
+              {/* ACTION BUTTON ROW */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#C5A059]/30">
+                <button
+                  type="button"
+                  onClick={() => setIsFilterCardOpen(false)}
+                  className="px-4 py-2 text-xs font-bold text-zinc-600 hover:text-zinc-900 transition-colors uppercase tracking-wider cursor-pointer"
+                >
+                  CANCEL
+                </button>
+
+                {isFilterActive && (
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="px-4 py-2 text-xs font-bold text-rose-600 hover:text-rose-700 transition-colors flex items-center gap-1.5 cursor-pointer uppercase tracking-wider"
+                  >
+                    <FiRotateCcw className="w-3.5 h-3.5" />
+                    <span>RESET</span>
+                  </button>
+                )}
+
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-[#1B5E3B] hover:bg-[#14462B] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer"
+                >
+                  APPLY FILTERS
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {/* ACTIVE FILTERS SUMMARY CHIPS */}
         {isFilterActive && (
@@ -521,19 +563,6 @@ function SareeCatalogContent() {
             )}
           </div>
         )}
-
-        {/* RESULTS HEADER & PRODUCT COUNT */}
-        <div ref={productSectionRef} className="flex items-center justify-between gap-4 mb-6 pt-2">
-          <div>
-            <h2 className="font-serif font-bold text-xl sm:text-2xl text-[#1B5E3B]">
-              Handcrafted Sarees
-            </h2>
-            <p className="text-xs text-zinc-500 font-medium mt-0.5">
-              Showing {totalProducts === 0 ? 0 : (currentPage - 1) * 10 + 1}–
-              {Math.min(currentPage * 10, totalProducts)} of {totalProducts} Sarees (10 per page)
-            </p>
-          </div>
-        </div>
 
         {/* PRODUCT CARDS GRID */}
         {loading ? (
@@ -631,6 +660,7 @@ function SareeCatalogContent() {
         )}
 
       </div>
+
     </div>
   );
 }

@@ -86,13 +86,10 @@ export default function FaqSection() {
     setOpenFaqId((prev) => (prev === id ? null : id));
   };
 
-  const filteredFaqs =
-    activeCategory === "all"
-      ? faqData
-      : faqData.filter((item) => item.category === activeCategory);
+  const filteredFaqs = faqData;
 
   return (
-    <section className="w-full py-12 sm:py-20 lg:py-24 bg-[#F5F2EB] relative overflow-hidden border-t border-[#C5A059]/30">
+    <section className="w-full py-12 sm:py-20 lg:py-24 bg-[#F5F2EB] relative overflow-x-clip border-t border-[#C5A059]/30">
       {/* Background Subtle Luxury Glows */}
       <div className="absolute top-1/2 left-0 w-72 sm:w-96 h-72 sm:h-96 bg-radial from-[#C5A059]/10 via-transparent to-transparent pointer-events-none blur-3xl" />
       <div className="absolute bottom-0 right-0 w-72 sm:w-96 h-72 sm:h-96 bg-radial from-[#1B5E3B]/10 via-transparent to-transparent pointer-events-none blur-3xl" />
@@ -119,31 +116,7 @@ export default function FaqSection() {
           <div className="w-16 h-0.5 bg-[#C5A059] mx-auto mt-3.5 rounded-full" />
         </div>
 
-        {/* CATEGORY FILTER TABS (Mobile Friendly Scrollable Pills) */}
-        <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto no-scrollbar pb-3 mb-6 -mx-4 px-4 sm:mx-0 sm:px-0">
-          {faqCategories.map((cat) => {
-            const isActive = activeCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => {
-                  setActiveCategory(cat.id);
-                  setOpenFaqId(null);
-                }}
-                className={`px-4 py-2 rounded-full text-xs font-bold tracking-wider uppercase whitespace-nowrap transition-all duration-200 cursor-pointer shrink-0 ${
-                  isActive
-                    ? "bg-[#1B5E3B] text-white shadow-md border border-[#1B5E3B]"
-                    : "bg-white/90 text-zinc-700 hover:bg-white border border-stone-300 hover:border-[#C5A059]"
-                }`}
-              >
-                {cat.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* FAQ ACCORDION LIST (Mobile-Optimized GPU Accelerated) */}
+        {/* FAQ ACCORDION LIST */}
         <div className="space-y-3 sm:space-y-4">
           {filteredFaqs.map((faq) => {
             const isOpen = openFaqId === faq.id;
@@ -166,7 +139,7 @@ export default function FaqSection() {
                     {faq.question}
                   </span>
                   <div
-                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shrink-0 transition-transform duration-300 transform-gpu ${
+                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shrink-0 transition-transform duration-300 ${
                       isOpen
                         ? "bg-[#1B5E3B] text-white rotate-180"
                         : "bg-[#F5F2EB] text-[#1B5E3B] group-hover:bg-[#C5A059]/20"
@@ -176,12 +149,11 @@ export default function FaqSection() {
                   </div>
                 </button>
 
-                {/* ACCORDION CONTENT (Smooth Hardware Accelerated Collapse) */}
+                {/* ACCORDION CONTENT */}
                 <div
-                  className={`transition-all duration-300 ease-out transform-gpu overflow-hidden ${
+                  className={`transition-all duration-300 ease-in-out overflow-hidden ${
                     isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
                   }`}
-                  style={{ willChange: "max-height, opacity" }}
                 >
                   <div className="px-4 sm:px-5 pb-5 pt-0 text-xs sm:text-sm text-zinc-600 leading-relaxed border-t border-stone-100">
                     <p className="pt-3 font-normal text-zinc-700 leading-relaxed">
@@ -217,51 +189,51 @@ export default function FaqSection() {
         </div>
 
         {/* TRUST GUARANTEES GRID */}
-        <div className="mt-10 sm:mt-14 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-          <div className="flex flex-col items-center text-center p-4 sm:p-5 rounded-2xl bg-white border border-stone-200 shadow-2xs hover:border-[#C5A059] transition-all">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#1B5E3B] text-[#C5A059] flex items-center justify-center mb-2.5 shadow-xs">
-              <FiAward className="text-lg sm:text-xl" />
+        <div className="mt-12 sm:mt-16 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="flex flex-col items-center text-center p-6 sm:p-7 rounded-2xl bg-white border border-[#C5A059]/30 shadow-xs hover:shadow-md hover:border-[#C5A059] transition-all duration-300">
+            <div className="w-14 h-14 rounded-2xl bg-[#134E2F] text-[#C5A059] flex items-center justify-center mb-4 shadow-xs">
+              <FiAward className="text-2xl" />
             </div>
-            <h4 className="font-serif font-bold text-xs sm:text-sm text-[#1B5E3B] mb-0.5">
+            <h4 className="font-serif font-bold text-sm sm:text-base md:text-lg text-[#1B5E3B] mb-1">
               100% Pure Silk
             </h4>
-            <p className="text-[10px] sm:text-xs text-zinc-500 font-normal">
+            <p className="text-xs sm:text-sm text-zinc-500 font-normal">
               Silk Mark Certified
             </p>
           </div>
 
-          <div className="flex flex-col items-center text-center p-4 sm:p-5 rounded-2xl bg-white border border-stone-200 shadow-2xs hover:border-[#C5A059] transition-all">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#1B5E3B] text-[#C5A059] flex items-center justify-center mb-2.5 shadow-xs">
-              <FiShield className="text-lg sm:text-xl" />
+          <div className="flex flex-col items-center text-center p-6 sm:p-7 rounded-2xl bg-white border border-[#C5A059]/30 shadow-xs hover:shadow-md hover:border-[#C5A059] transition-all duration-300">
+            <div className="w-14 h-14 rounded-2xl bg-[#134E2F] text-[#C5A059] flex items-center justify-center mb-4 shadow-xs">
+              <FiShield className="text-2xl" />
             </div>
-            <h4 className="font-serif font-bold text-xs sm:text-sm text-[#1B5E3B] mb-0.5">
+            <h4 className="font-serif font-bold text-sm sm:text-base md:text-lg text-[#1B5E3B] mb-1">
               Master Weavers
             </h4>
-            <p className="text-[10px] sm:text-xs text-zinc-500 font-normal">
+            <p className="text-xs sm:text-sm text-zinc-500 font-normal">
               Direct Handloom
             </p>
           </div>
 
-          <div className="flex flex-col items-center text-center p-4 sm:p-5 rounded-2xl bg-white border border-stone-200 shadow-2xs hover:border-[#C5A059] transition-all">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#1B5E3B] text-[#C5A059] flex items-center justify-center mb-2.5 shadow-xs">
-              <FiTruck className="text-lg sm:text-xl" />
+          <div className="flex flex-col items-center text-center p-6 sm:p-7 rounded-2xl bg-white border border-[#C5A059]/30 shadow-xs hover:shadow-md hover:border-[#C5A059] transition-all duration-300">
+            <div className="w-14 h-14 rounded-2xl bg-[#134E2F] text-[#C5A059] flex items-center justify-center mb-4 shadow-xs">
+              <FiTruck className="text-2xl" />
             </div>
-            <h4 className="font-serif font-bold text-xs sm:text-sm text-[#1B5E3B] mb-0.5">
+            <h4 className="font-serif font-bold text-sm sm:text-base md:text-lg text-[#1B5E3B] mb-1">
               Express Delivery
             </h4>
-            <p className="text-[10px] sm:text-xs text-zinc-500 font-normal">
+            <p className="text-xs sm:text-sm text-zinc-500 font-normal">
               Insured Shipping
             </p>
           </div>
 
-          <div className="flex flex-col items-center text-center p-4 sm:p-5 rounded-2xl bg-white border border-[#C5A059]/40 shadow-2xs hover:border-[#C5A059] transition-all">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#1B5E3B] text-[#C5A059] flex items-center justify-center mb-2.5 shadow-xs">
-              <FiMessageSquare className="text-lg sm:text-xl" />
+          <div className="flex flex-col items-center text-center p-6 sm:p-7 rounded-2xl bg-white border border-[#C5A059]/30 shadow-xs hover:shadow-md hover:border-[#C5A059] transition-all duration-300">
+            <div className="w-14 h-14 rounded-2xl bg-[#134E2F] text-[#C5A059] flex items-center justify-center mb-4 shadow-xs">
+              <FiMessageSquare className="text-2xl" />
             </div>
-            <h4 className="font-serif font-bold text-xs sm:text-sm text-[#1B5E3B] mb-0.5">
+            <h4 className="font-serif font-bold text-sm sm:text-base md:text-lg text-[#1B5E3B] mb-1">
               24/7 Concierge
             </h4>
-            <p className="text-[10px] sm:text-xs text-zinc-500 font-normal">
+            <p className="text-xs sm:text-sm text-zinc-500 font-normal">
               Expert Saree Support
             </p>
           </div>

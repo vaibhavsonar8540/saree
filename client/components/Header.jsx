@@ -280,9 +280,6 @@ export default function Header() {
                 }`}
               >
                 <span>Saree</span>
-                <span className="bg-[#1B5E3B]/10 text-[#1B5E3B] text-[10px] px-1.5 py-0.5 rounded font-bold uppercase">
-                  Shop
-                </span>
                 <FiChevronDown
                   className={`h-4 w-4 transition-transform duration-300 ${
                     isCardOpen ? "rotate-180 text-[#1B5E3B]" : "text-zinc-400"
@@ -439,22 +436,22 @@ export default function Header() {
         ref={searchPanelRef}
         className={`w-full bg-[#F5F2EB] border-b border-[#C5A059]/30 shadow-lg transition-all duration-300 ease-out origin-top z-40 overflow-hidden ${
           searchOpen
-            ? "opacity-100 translate-y-0 max-h-48 py-4 sm:py-5 pointer-events-auto visible"
+            ? "opacity-100 translate-y-0 max-h-32 py-3 sm:py-4 pointer-events-auto visible"
             : "opacity-0 -translate-y-4 max-h-0 py-0 pointer-events-none invisible"
         }`}
       >
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto px-3 sm:px-6">
           <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full">
             {/* Pill Search Container */}
-            <div className="relative flex items-center w-full bg-white rounded-full border border-stone-300 focus-within:border-[#1B5E3B] focus-within:ring-2 focus-within:ring-[#1B5E3B]/20 shadow-xs transition-all overflow-hidden px-4 sm:px-6 py-2 sm:py-2.5">
-              <FiSearch className="text-zinc-400 h-4 w-4 sm:h-5 sm:w-5 shrink-0 mr-3" />
+            <div className="relative flex items-center w-full bg-white rounded-full border border-stone-300 focus-within:border-[#1B5E3B] focus-within:ring-2 focus-within:ring-[#1B5E3B]/20 shadow-xs transition-all overflow-hidden px-3 sm:px-5 py-1.5 sm:py-2 gap-1.5 sm:gap-2">
+              <FiSearch className="text-zinc-400 h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
               
               <input
                 type="text"
-                placeholder="Search products by collection, category, subcategory, fabric..."
+                placeholder="Search sarees, fabrics, categories..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 bg-transparent focus:outline-none py-1"
+                className="w-full min-w-0 text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 bg-transparent focus:outline-none py-1"
                 autoFocus={searchOpen}
               />
 
@@ -462,7 +459,7 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => setSearchTerm("")}
-                  className="p-1 text-zinc-400 hover:text-zinc-600 transition-colors mr-2 cursor-pointer"
+                  className="p-1 text-zinc-400 hover:text-zinc-600 transition-colors shrink-0 cursor-pointer"
                   aria-label="Clear search"
                 >
                   <FiX className="h-4 w-4" />
@@ -471,31 +468,12 @@ export default function Header() {
 
               <button
                 type="submit"
-                className="shrink-0 px-5 sm:px-7 py-2 bg-black hover:bg-[#1B5E3B] text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider rounded-full shadow-md transition-all cursor-pointer"
+                className="shrink-0 px-3.5 sm:px-6 py-1.5 sm:py-2 bg-[#1B5E3B] hover:bg-[#14462B] text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-full shadow-xs transition-all cursor-pointer"
               >
                 SEARCH
               </button>
             </div>
           </form>
-
-          {/* Quick Popular Searches Tags */}
-          <div className="flex items-center justify-center gap-1.5 sm:gap-3 mt-3 flex-wrap text-[10px] sm:text-xs text-zinc-500">
-            <span className="font-semibold text-zinc-400">Popular Searches:</span>
-            {["Banarasi", "Kanchipuram", "Organza", "Silk", "Chanderi", "Bridal"].map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => {
-                  setSearchTerm(tag);
-                  router.push(`/sarees?search=${encodeURIComponent(tag)}`);
-                  setSearchOpen(false);
-                }}
-                className="px-3 py-1 rounded-full bg-white hover:bg-[#1B5E3B] hover:text-white border border-stone-200 text-zinc-600 transition-all font-medium cursor-pointer shadow-2xs"
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -588,17 +566,14 @@ export default function Header() {
             </Link>
 
             {/* Saree with Arrow Toggle for Categories Dropdown */}
-            <div className="rounded-xl border border-stone-200/80 bg-white/60 overflow-hidden shadow-xs">
-              <div className="flex items-center justify-between px-4 py-3.5 font-semibold text-base text-[#1B5E3B]">
+            <div className="border-b border-stone-200/60">
+              <div className="flex items-center justify-between px-4 py-3.5 font-semibold text-base text-[#222222] hover:text-[#1B5E3B] hover:bg-[#1B5E3B]/10 rounded-xl transition-colors">
                 <Link
                   href="/sarees"
                   onClick={() => dispatch(closeMobileMenu())}
-                  className="flex items-center gap-2 flex-1 hover:underline"
+                  className="flex-1"
                 >
                   <span>Saree</span>
-                  <span className="bg-[#1B5E3B] text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                    Shop
-                  </span>
                 </Link>
                 <button
                   type="button"
@@ -606,7 +581,7 @@ export default function Header() {
                     e.stopPropagation();
                     setMobileSareeDropdownOpen(!mobileSareeDropdownOpen);
                   }}
-                  className="p-1.5 rounded-lg text-[#1B5E3B] hover:bg-[#1B5E3B]/10 transition-colors cursor-pointer"
+                  className="p-1 rounded-lg text-zinc-600 hover:text-[#1B5E3B] transition-colors cursor-pointer"
                   aria-label="Toggle Saree Categories"
                 >
                   <FiChevronDown
@@ -619,7 +594,7 @@ export default function Header() {
 
               {/* Saree Categories & Subcategories Dropdown Panel */}
               {mobileSareeDropdownOpen && (
-                <div className="px-4 pb-4 pt-2 border-t border-stone-200/70 space-y-3 bg-[#F5F2EB]/90 animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="px-4 pb-4 pt-2 space-y-3 bg-[#F5F2EB]/90 animate-in fade-in slide-in-from-top-1 duration-200">
                   <Link
                     href="/sarees"
                     onClick={() => dispatch(closeMobileMenu())}
