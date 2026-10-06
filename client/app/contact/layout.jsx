@@ -12,7 +12,7 @@ export const metadata = {
     title: "Contact Concierge & Customer Support | Anjali Creation",
     description:
       "Direct phone, email, and WhatsApp concierge assistance for all your pure silk saree inquiries.",
-    url: "https://anjalicreation.com/contact",
+    url: "https://anjali-creation.vercel.app/contact",
     type: "website",
   },
 };

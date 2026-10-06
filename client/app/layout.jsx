@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://anjalicreation.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://anjali-creation.vercel.app"),
   title: {
     default: "Anjali Creation | Luxury Indian Silk Sarees & Ethnic Heritage",
     template: "%s | Anjali Creation",
@@ -48,7 +48,7 @@ export const metadata = {
     title: "Anjali Creation | Luxury Indian Silk Sarees & Ethnic Heritage",
     description:
       "Exquisite handcrafted Kanchipuram, Banarasi, Paithani & Organza sarees. 100% Pure Silk Mark certified.",
-    url: "https://anjalicreation.com",
+    url: "https://anjali-creation.vercel.app",
     siteName: "Anjali Creation",
     images: [
       {

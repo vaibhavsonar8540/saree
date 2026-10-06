@@ -13,4 +13,4 @@ Disallow: /api/
 Disallow: /_next/
 
 # Sitemap Location
-Sitemap: https://anjalicreation.com/sitemap.xml
+Sitemap: https://anjali-creation.vercel.app/sitemap.xml

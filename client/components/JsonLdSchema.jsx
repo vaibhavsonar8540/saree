@@ -8,9 +8,9 @@ export const StoreJsonLd = () => {
     "@context": "https://schema.org",
     "@type": "ClothingStore",
     name: "Anjali Creation",
-    image: "https://anjalicreation.com/images/about/hero_banner.png",
-    "@id": "https://anjalicreation.com/#store",
-    url: "https://anjalicreation.com",
+    image: "https://anjali-creation.vercel.app/images/about/hero_banner.png",
+    "@id": "https://anjali-creation.vercel.app/#store",
+    url: "https://anjali-creation.vercel.app",
     telephone: "+91-9876543210",
     priceRange: "₹₹₹",
     address: {
@@ -75,7 +75,7 @@ export const ProductJsonLd = ({ product }) => {
     },
     offers: {
       "@type": "Offer",
-      url: `https://anjalicreation.com/product/${product._id || product.id}`,
+      url: `https://anjali-creation.vercel.app/product/${product._id || product.id}`,
       priceCurrency: "INR",
       price: product.price || product.discountPrice || 4999,
       itemCondition: "https://schema.org/NewCondition",

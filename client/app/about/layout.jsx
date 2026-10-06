@@ -12,7 +12,7 @@ export const metadata = {
     title: "Our Heritage & Master Handloom Artisans | Anjali Creation",
     description:
       "Three decades of handloom weaving excellence. Discover our pure silk mark sarees handcrafted by master artisans.",
-    url: "https://anjalicreation.com/about",
+    url: "https://anjali-creation.vercel.app/about",
     type: "website",
   },
 };

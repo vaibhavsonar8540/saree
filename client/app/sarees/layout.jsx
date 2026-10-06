@@ -14,7 +14,7 @@ export const metadata = {
     title: "Explore Pure Silk & Designer Sarees | Anjali Creation",
     description:
       "Handcrafted Kanchipuram, Banarasi & Organza silk sarees with authentic Silk Mark certification.",
-    url: "https://anjalicreation.com/sarees",
+    url: "https://anjali-creation.vercel.app/sarees",
     type: "website",
   },
 };
