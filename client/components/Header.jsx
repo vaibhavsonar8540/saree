@@ -431,13 +431,13 @@ export default function Header() {
         </div>
       </div>
 
-      {/* FULL-WIDTH SLIDING SEARCH BAR (SLIDES DOWN FROM HEADER) */}
+      {/* FULL-WIDTH ABSOLUTE SLIDING SEARCH BAR (SLIDES OVER HERO BANNER / PAGE CONTENT) */}
       <div
         ref={searchPanelRef}
-        className={`w-full bg-[#F5F2EB] border-b border-[#C5A059]/30 shadow-lg transition-all duration-300 ease-out origin-top z-40 overflow-hidden ${
+        className={`absolute top-full left-0 right-0 w-full bg-[#F5F2EB]/95 backdrop-blur-md border-b border-[#C5A059]/30 shadow-xl transition-all duration-300 ease-out origin-top z-50 overflow-hidden ${
           searchOpen
-            ? "opacity-100 translate-y-0 max-h-32 py-3 sm:py-4 pointer-events-auto visible"
-            : "opacity-0 -translate-y-4 max-h-0 py-0 pointer-events-none invisible"
+            ? "opacity-100 translate-y-0 py-3 sm:py-4 pointer-events-auto visible"
+            : "opacity-0 -translate-y-2 py-0 pointer-events-none invisible"
         }`}
       >
         <div className="max-w-4xl mx-auto px-3 sm:px-6">
