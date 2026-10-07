@@ -8,6 +8,7 @@ import { isInWishlist, toggleWishlist } from "@/utils/wishlist";
 import CustomImage from "./customImage";
 import { Button } from "./Buttons";
 import { FiHeart, FiShoppingCart, FiStar, FiEye } from "react-icons/fi";
+import { getProductImageAltTitle } from "@/app/imgAltTitle";
 
 const ProductCard = ({
   product = {},
@@ -154,6 +155,8 @@ const ProductCard = ({
     dispatch(openCartDrawer());
   };
 
+  const imgMeta = getProductImageAltTitle(productTitle, catName);
+
   return (
     <div
       className={`group relative flex flex-col rounded-xl sm:rounded-2xl bg-white border border-stone-200/90 overflow-hidden shadow-xs hover:shadow-xl hover:border-[#C5A059]/40 transition-all duration-300 ${className}`}
@@ -165,7 +168,8 @@ const ProductCard = ({
         <Link href={`/product/${_id}`} className="block w-full h-full relative">
           <CustomImage
             srcAttr={displayImage}
-            altAttr={productTitle}
+            altAttr={imgMeta.alt}
+            titleAttr={imgMeta.title}
             fill={true}
             className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
           />

@@ -1,11 +1,7 @@
-export const metadata = {
-  title: "My Favourites",
-  description: "View your saved favourite silk sarees.",
-  robots: {
-    index: false,
-    follow: true,
-  },
-};
+import { PAGE_CONSTANT } from "@/app/constant";
+import { getPageMetadata } from "@/app/metadata";
+
+export const metadata = getPageMetadata(PAGE_CONSTANT.FAVOURITES);
 
 export default function FavouritesLayout({ children }) {
   return children;

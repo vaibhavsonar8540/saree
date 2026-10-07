@@ -2,6 +2,7 @@
 
 import { LinkButton } from "./Buttons";
 import CustomImage from "./customImage";
+import { IMG_ALT_TITLE } from "@/app/imgAltTitle";
 
 const HeroBanner = ({
   badge = "",
@@ -20,8 +21,8 @@ const HeroBanner = ({
   src = "",
   srcAttr = "",
   mobileSrc = "",
-  altAttr = "Hero Saree Banner",
-  titleAttr = "",
+  altAttr = IMG_ALT_TITLE.HERO_DESKTOP.alt,
+  titleAttr = IMG_ALT_TITLE.HERO_DESKTOP.title,
   contentClass = "",
   variant = "primary",
   size = "lg",

@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import CustomImage from "@/components/customImage";
+import { IMG_ALT_TITLE } from "@/app/imgAltTitle";
 import {
   FiAward,
   FiShield,
@@ -71,7 +72,8 @@ export default function AboutPage() {
         <div className="absolute inset-0 w-full h-full opacity-35 mix-blend-overlay">
           <CustomImage
             src="/images/about/hero_banner.png"
-            alt="Anjali Creation Hero Banner - Luxury Saree Heritage"
+            altAttr={IMG_ALT_TITLE.ABOUT_HERO.alt}
+            titleAttr={IMG_ALT_TITLE.ABOUT_HERO.title}
             fill
             priority
             className="object-cover"
@@ -180,7 +182,8 @@ export default function AboutPage() {
               <div className="rounded-3xl overflow-hidden shadow-md border-2 border-[#C5A059]/30 group relative aspect-[4/5]">
                 <CustomImage
                   src="/images/about/artisan_craft.png"
-                  alt="Master Handloom Artisan Weaving Pure Silk"
+                  altAttr={IMG_ALT_TITLE.ABOUT_ARTISAN.alt}
+                  titleAttr={IMG_ALT_TITLE.ABOUT_ARTISAN.title}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
@@ -201,7 +204,8 @@ export default function AboutPage() {
               <div className="rounded-3xl overflow-hidden shadow-md border-2 border-[#C5A059]/30 group relative aspect-[4/5]">
                 <CustomImage
                   src="/images/about/heritage_gallery.png"
-                  alt="Handcrafted Pure Silk Sarees Showcase"
+                  altAttr={IMG_ALT_TITLE.ABOUT_HERITAGE.alt}
+                  titleAttr={IMG_ALT_TITLE.ABOUT_HERITAGE.title}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />

@@ -1,11 +1,7 @@
-export const metadata = {
-  title: "Payment Confirmation & Status",
-  description: "Secure payment processing and order confirmation for Anjali Creation.",
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
+import { PAGE_CONSTANT } from "@/app/constant";
+import { getPageMetadata } from "@/app/metadata";
+
+export const metadata = getPageMetadata(PAGE_CONSTANT.PAYMENT);
 
 export default function PaymentLayout({ children }) {
   return children;

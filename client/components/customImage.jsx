@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 
+import { IMG_ALT_TITLE } from "@/app/imgAltTitle";
+
 const CustomImage = ({
   src,
   srcAttr,
@@ -34,8 +36,8 @@ const CustomImage = ({
 
   if (!initialSrc && !fallbackSrc) return null;
 
-  const finalAlt = altAttr || alt || "Saree Elegance Product Image";
-  const finalTitle = titleAttr || title;
+  const finalAlt = altAttr || alt || IMG_ALT_TITLE.PRODUCT_PLACEHOLDER.alt;
+  const finalTitle = titleAttr || title || IMG_ALT_TITLE.PRODUCT_PLACEHOLDER.title;
 
   // Determine if fill should be used
   const isFill = fill !== undefined
