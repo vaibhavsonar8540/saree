@@ -5,9 +5,12 @@ export default async function sitemap() {
   const staticPages = [
     { route: '', priority: 1.0, changeFrequency: 'daily' },
     { route: '/sarees', priority: 0.9, changeFrequency: 'daily' },
+    { route: '/category', priority: 0.9, changeFrequency: 'weekly' },
+    { route: '/sitemap', priority: 0.85, changeFrequency: 'weekly' },
     { route: '/about', priority: 0.8, changeFrequency: 'weekly' },
     { route: '/contact', priority: 0.8, changeFrequency: 'monthly' },
-    { route: '/wishlist', priority: 0.5, changeFrequency: 'monthly' },
+    { route: '/cart', priority: 0.6, changeFrequency: 'monthly' },
+    { route: '/favourites', priority: 0.6, changeFrequency: 'monthly' },
   ];
 
   const staticRoutes = staticPages.map(({ route, priority, changeFrequency }) => ({
@@ -17,10 +20,19 @@ export default async function sitemap() {
     priority,
   }));
 
-  // 2. Fetch product routes dynamically from API
+  // 2. Core category routes
+  const categories = ['organza', 'banarasi', 'bridal', 'traditional', 'silk', 'cotton-saree'];
+  const categoryRoutes = categories.map((slug) => ({
+    url: `${baseUrl}/saree/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.85,
+  }));
+
+  // 3. Fetch product routes dynamically from API
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://saree-i37o.onrender.com/api';
-    const res = await fetch(`${apiUrl}/sarees?limit=200`, {
+    const res = await fetch(`${apiUrl}/sarees?limit=300`, {
       next: { revalidate: 3600 },
       headers: {
         'Accept': 'application/json',
@@ -38,11 +50,11 @@ export default async function sitemap() {
         priority: 0.7,
       }));
 
-      return [...staticRoutes, ...productRoutes];
+      return [...staticRoutes, ...categoryRoutes, ...productRoutes];
     }
   } catch (error) {
-    console.warn('Sitemap generator: Could not fetch dynamic product URLs, returning static routes.', error.message);
+    console.warn('Sitemap generator: Could not fetch dynamic product URLs, returning static & category routes.', error.message);
   }
 
-  return staticRoutes;
+  return [...staticRoutes, ...categoryRoutes];
 }
