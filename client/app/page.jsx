@@ -25,28 +25,28 @@ const featuredCategories = [
     name: "Traditional",
     subtitle: "Heritage Classics",
     image: traditionalImg,
-    href: "/sarees?category=traditional",
+    href: "/saree/traditional",
   },
   {
     id: "bridal",
     name: "Bridal",
     subtitle: "Wedding Finery",
     image: bridalImg,
-    href: "/sarees?category=bridal",
+    href: "/saree/bridal",
   },
   {
     id: "organza",
     name: "Organza",
     subtitle: "Sheer Luxury",
     image: organzaImg,
-    href: "/sarees?category=organza",
+    href: "/saree/organza",
   },
   {
     id: "banarasi",
     name: "Banarasi",
     subtitle: "Royal Brocade",
     image: banarasiImg,
-    href: "/sarees?category=banarasi",
+    href: "/saree/banarasi",
   },
 ];
 

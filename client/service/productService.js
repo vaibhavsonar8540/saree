@@ -48,6 +48,25 @@ export const fetchProductById = async (id) => {
 };
 
 /**
+ * Service to fetch Category details by ID or slug/name.
+ * Endpoint: GET /api/categories/:id
+ */
+export const fetchCategoryById = async (id) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/categories/${id}`, {
+      timeout: 10000,
+    });
+    if (response.data && response.data.success) {
+      return response.data.data;
+    }
+    return response.data?.data || null;
+  } catch (error) {
+    console.warn(`ProductService: Failed to fetch category details for '${id}'.`, error.message);
+    return null;
+  }
+};
+
+/**
  * Service to fetch sarees list with optional category filter.
  * Endpoint: GET /api/sarees
  */
@@ -111,6 +130,7 @@ const productService = {
   fetchNewArrivals,
   fetchMostLovedProducts,
   fetchProductById,
+  fetchCategoryById,
   fetchSarees,
 };
 

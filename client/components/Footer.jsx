@@ -99,18 +99,23 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/sarees?category=organza" className="hover:text-[#C5A059] transition-colors">
+                <Link href="/saree/organza" className="hover:text-[#C5A059] transition-colors">
                   Organza Sarees
                 </Link>
               </li>
               <li>
-                <Link href="/sarees?category=silk" className="hover:text-[#C5A059] transition-colors">
+                <Link href="/saree/silk" className="hover:text-[#C5A059] transition-colors">
                   Cotton & Silk
                 </Link>
               </li>
               <li>
                 <Link href="/about" className="hover:text-[#C5A059] transition-colors">
                   Our Heritage
+                </Link>
+              </li>
+              <li>
+                <Link href="/sitemap" className="hover:text-[#C5A059] font-medium transition-colors">
+                  Sitemap & Directory
                 </Link>
               </li>
             </ul>
@@ -147,6 +152,11 @@ export default function Footer() {
                   Terms of Service
                 </Link>
               </li>
+              <li>
+                <Link href="/sitemap" className="hover:text-[#C5A059] transition-colors">
+                  Store Sitemap
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -180,8 +190,21 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 pt-8 border-t border-zinc-800/80 flex items-center justify-center text-center text-xs text-zinc-500">
+        <div className="mt-12 pt-8 border-t border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-400">
           <p>© {new Date().getFullYear()} Anjali Creation Sarees. All Rights Reserved.</p>
+          <div className="flex items-center gap-4 text-xs">
+            <Link href="/sitemap" className="hover:text-[#C5A059] font-semibold text-zinc-300 transition-colors">
+              Sitemap
+            </Link>
+            <span className="text-zinc-600">•</span>
+            <Link href="/privacy" className="hover:text-[#C5A059] transition-colors">
+              Privacy Policy
+            </Link>
+            <span className="text-zinc-600">•</span>
+            <Link href="/terms" className="hover:text-[#C5A059] transition-colors">
+              Terms of Service
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

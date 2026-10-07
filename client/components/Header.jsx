@@ -503,37 +503,40 @@ export default function Header() {
             </div>
           ) : categories && categories.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 xl:gap-12 min-h-40">
-              {categories.map((cat) => (
-                <div key={cat._id} className="flex flex-col space-y-3">
-                  {/* Category Header */}
-                  <Link
-                    href={`/sarees?category=${cat._id}`}
-                    onClick={handleCloseMegaMenuImmediate}
-                    className="font-serif font-bold text-sm text-[#222222] hover:text-[#1B5E3B] border-b border-[#C5A059]/20 pb-2 flex items-center justify-between group/cat transition-colors"
-                  >
-                    <span>{cat.name}</span>
-                    <FiArrowRight className="text-xs text-zinc-400 group-hover/cat:text-[#1B5E3B] group-hover/cat:translate-x-0.5 transition-all" />
-                  </Link>
+              {categories.map((cat) => {
+                const catSlug = cat.name ? cat.name.toLowerCase().trim().replace(/\s+/g, '-') : cat._id;
+                return (
+                  <div key={cat._id} className="flex flex-col space-y-3">
+                    {/* Category Header */}
+                    <Link
+                      href={`/saree/${catSlug}`}
+                      onClick={handleCloseMegaMenuImmediate}
+                      className="font-serif font-bold text-sm text-[#222222] hover:text-[#1B5E3B] border-b border-[#C5A059]/20 pb-2 flex items-center justify-between group/cat transition-colors"
+                    >
+                      <span>{cat.name}</span>
+                      <FiArrowRight className="text-xs text-zinc-400 group-hover/cat:text-[#1B5E3B] group-hover/cat:translate-x-0.5 transition-all" />
+                    </Link>
 
-                  {/* Vertical Subcategories Column */}
-                  <div className="flex flex-col space-y-2">
-                    {cat.subCategories && cat.subCategories.length > 0 ? (
-                      cat.subCategories.map((sub) => (
-                        <Link
-                          key={sub._id}
-                          href={`/sarees?subCategory=${sub._id}`}
-                          onClick={handleCloseMegaMenuImmediate}
-                          className="text-xs text-zinc-600 hover:text-[#1B5E3B] hover:translate-x-1 transition-all py-0.5"
-                        >
-                          {sub.name}
-                        </Link>
-                      ))
-                    ) : (
-                      <span className="text-xs text-zinc-400 italic">No subcategories</span>
-                    )}
+                    {/* Vertical Subcategories Column */}
+                    <div className="flex flex-col space-y-2">
+                      {cat.subCategories && cat.subCategories.length > 0 ? (
+                        cat.subCategories.map((sub) => (
+                          <Link
+                            key={sub._id}
+                            href={`/saree/${catSlug}?subCategory=${sub._id}`}
+                            onClick={handleCloseMegaMenuImmediate}
+                            className="text-xs text-zinc-600 hover:text-[#1B5E3B] hover:translate-x-1 transition-all py-0.5"
+                          >
+                            {sub.name}
+                          </Link>
+                        ))
+                      ) : (
+                        <span className="text-xs text-zinc-400 italic">No subcategories</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="p-8 text-center text-xs text-zinc-500">No categories found</div>
@@ -605,32 +608,35 @@ export default function Header() {
 
                   {categories && categories.length > 0 ? (
                     <div className="space-y-3">
-                      {categories.map((cat) => (
-                        <div key={cat._id} className="space-y-1">
-                          <Link
-                            href={`/sarees?category=${cat._id}`}
-                            onClick={() => dispatch(closeMobileMenu())}
-                            className="font-serif font-bold text-xs text-[#222222] hover:text-[#1B5E3B] flex items-center justify-between"
-                          >
-                            <span>{cat.name}</span>
-                            <FiArrowRight className="text-[10px] text-zinc-400" />
-                          </Link>
-                          {cat.subCategories && cat.subCategories.length > 0 && (
-                            <div className="pl-3 space-y-1 border-l-2 border-[#C5A059]/30">
-                              {cat.subCategories.map((sub) => (
-                                <Link
-                                  key={sub._id}
-                                  href={`/sarees?subCategory=${sub._id}`}
-                                  onClick={() => dispatch(closeMobileMenu())}
-                                  className="block text-[11px] text-zinc-600 hover:text-[#1B5E3B] py-0.5"
-                                >
-                                  {sub.name}
-                                </Link>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                      {categories.map((cat) => {
+                        const catSlug = cat.name ? cat.name.toLowerCase().trim().replace(/\s+/g, '-') : cat._id;
+                        return (
+                          <div key={cat._id} className="space-y-1">
+                            <Link
+                              href={`/saree/${catSlug}`}
+                              onClick={() => dispatch(closeMobileMenu())}
+                              className="font-serif font-bold text-xs text-[#222222] hover:text-[#1B5E3B] flex items-center justify-between"
+                            >
+                              <span>{cat.name}</span>
+                              <FiArrowRight className="text-[10px] text-zinc-400" />
+                            </Link>
+                            {cat.subCategories && cat.subCategories.length > 0 && (
+                              <div className="pl-3 space-y-1 border-l-2 border-[#C5A059]/30">
+                                {cat.subCategories.map((sub) => (
+                                  <Link
+                                    key={sub._id}
+                                    href={`/saree/${catSlug}?subCategory=${sub._id}`}
+                                    onClick={() => dispatch(closeMobileMenu())}
+                                    className="block text-[11px] text-zinc-600 hover:text-[#1B5E3B] py-0.5"
+                                  >
+                                    {sub.name}
+                                  </Link>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-xs text-zinc-500 italic">Loading categories...</div>

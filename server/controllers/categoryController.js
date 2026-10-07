@@ -83,12 +83,32 @@ const getCategories = async (req, res) => {
   }
 };
 
-// @desc    Fetch / Get Category by ID
+// @desc    Fetch / Get Category by ID or Name/Slug
 // @route   GET /api/categories/:id
 // @access  Public
 const getCategoryById = async (req, res) => {
   try {
-    const category = await Category.findById(req.params.id).lean();
+    const { id } = req.params;
+    const mongoose = require('mongoose');
+    let category = null;
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      category = await Category.findById(id).lean();
+    }
+
+    if (!category) {
+      const decodedName = decodeURIComponent(id).replace(/-/g, ' ').trim();
+      category = await Category.findOne({
+        name: { $regex: new RegExp(`^${decodedName}$`, 'i') },
+      }).lean();
+    }
+
+    if (!category) {
+      const decodedName = decodeURIComponent(id).replace(/-/g, ' ').trim();
+      category = await Category.findOne({
+        name: { $regex: new RegExp(decodedName, 'i') },
+      }).lean();
+    }
 
     if (!category) {
       return res.status(404).json({
@@ -97,7 +117,7 @@ const getCategoryById = async (req, res) => {
       });
     }
 
-    const subCategories = await SubCategory.find({ categoryId: category._id }).sort({ name: 1 });
+    const subCategories = await SubCategory.find({ categoryId: category._id }).sort({ name: 1 }).lean();
 
     res.status(200).json({
       success: true,

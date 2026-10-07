@@ -367,18 +367,34 @@ const getSarees = async (req, res) => {
     const mongoose = require('mongoose');
 
     if (category) {
+      let catName = category;
+      let catId = category;
+      const cleanName = decodeURIComponent(category).replace(/-/g, ' ').trim();
+
       if (mongoose.Types.ObjectId.isValid(category)) {
         const catObj = await Category.findById(category).lean();
-        const catName = catObj ? catObj.name : category;
-        filter.$or = [
-          { category: { $regex: new RegExp(category, 'i') } },
-          { category: { $regex: new RegExp(catName, 'i') } },
-          { subCategory: { $regex: new RegExp(catName, 'i') } },
-          { fabric: { $regex: new RegExp(catName, 'i') } },
-        ];
+        if (catObj) catName = catObj.name;
       } else {
-        filter.category = { $regex: new RegExp(category, 'i') };
+        const catObj = await Category.findOne({
+          $or: [
+            { name: { $regex: new RegExp(`^${cleanName}$`, 'i') } },
+            { name: { $regex: new RegExp(cleanName, 'i') } },
+          ],
+        }).lean();
+        if (catObj) {
+          catName = catObj.name;
+          catId = catObj._id.toString();
+        } else {
+          catName = cleanName;
+        }
       }
+
+      filter.$or = [
+        { category: { $regex: new RegExp(catId, 'i') } },
+        { category: { $regex: new RegExp(catName, 'i') } },
+        { subCategory: { $regex: new RegExp(catName, 'i') } },
+        { fabric: { $regex: new RegExp(catName, 'i') } },
+      ];
     }
 
     if (subCategory) {
