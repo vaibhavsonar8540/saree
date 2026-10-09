@@ -7,7 +7,7 @@
     "start": "node index.js",
     "build": "echo 'No build step required'",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node tests/cartCalculator.test.js"
   },
   "keywords": [],
   "author": "",
@@ -23,6 +23,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.10.2",
     "multer": "^2.4.0",
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "razorpay": "^2.9.8"
   }
 }

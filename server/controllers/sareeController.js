@@ -360,8 +360,13 @@ const getSarees = async (req, res) => {
 
     const filter = {};
 
-    if (isActive !== undefined) {
-      filter.isActive = isActive === 'true';
+    if (isActive === 'all') {
+      // Admin bypass: include both active and inactive products
+    } else if (isActive !== undefined) {
+      filter.isActive = isActive === 'true' || isActive === true;
+    } else {
+      // Storefront default: include only active products
+      filter.isActive = true;
     }
 
     const mongoose = require('mongoose');
@@ -493,10 +498,19 @@ const searchSarees = async (req, res) => {
       sortBy,
       page = 1,
       limit = 10,
+      isActive,
     } = req.query;
 
     const searchTerm = (q || search || name || '').trim();
-    const filter = { isActive: true };
+    const filter = {};
+
+    if (isActive === 'all') {
+      // Admin bypass
+    } else if (isActive !== undefined) {
+      filter.isActive = isActive === 'true' || isActive === true;
+    } else {
+      filter.isActive = true;
+    }
 
     const mongoose = require('mongoose');
 

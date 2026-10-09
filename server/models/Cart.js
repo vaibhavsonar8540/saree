@@ -31,8 +31,21 @@ const cartSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
-      unique: true,
+      default: null,
+      sparse: true,
+      index: true,
+    },
+    guestToken: {
+      type: String,
+      default: null,
+      sparse: true,
+      index: true,
+    },
+    couponCode: {
+      type: String,
+      default: '',
+      trim: true,
+      uppercase: true,
     },
     items: [cartItemSchema],
   },

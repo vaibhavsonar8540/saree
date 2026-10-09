@@ -1,27 +1,101 @@
 const Order = require('../models/Order');
+const Cart = require('../models/Cart');
+const Saree = require('../models/Saree');
+const { calculateCartTotals } = require('../utils/cartCalculator');
+const { transitionOrder } = require('../utils/orderLifecycle');
 
 /**
- * @desc    Create a new order
- * @route   POST /api/orders
- * @access  Public / Optional Auth (Attaches userId if user is logged in)
+ * @desc    Validate checkout details & return server-calculated order summary
+ * @route   POST /api/orders/validate-checkout
+ * @access  Public (Guest / User)
  */
-const createOrder = async (req, res) => {
+const validateCheckout = async (req, res) => {
   try {
-    const { shippingAddress, items, couponCode, paymentMethod } = req.body;
+    const { shippingAddress, items = [], couponCode = '' } = req.body;
 
-    // 1. Validation: check items array
-    if (!items || !Array.isArray(items) || items.length === 0) {
+    let rawItems = items;
+    let activeCoupon = couponCode;
+
+    if (!rawItems || rawItems.length === 0) {
+      let cart = null;
+      if (req.user && req.user._id) {
+        cart = await Cart.findOne({ userId: req.user._id });
+      } else if (req.guestToken) {
+        cart = await Cart.findOne({ guestToken: req.guestToken });
+      }
+      if (cart) {
+        rawItems = cart.items;
+        if (!activeCoupon) activeCoupon = cart.couponCode;
+      }
+    }
+
+    if (!rawItems || rawItems.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Cannot place order with an empty items list',
+        message: 'Cart is empty. Add items before checking out.',
       });
     }
 
-    // 2. Validation: check shipping address
+    const pincode = shippingAddress?.pincode || '';
+    const calculation = await calculateCartTotals({
+      cartItems: rawItems,
+      couponCode: activeCoupon,
+      pincode,
+    });
+
+    if (pincode && pincode.length === 6 && !calculation.pincodeInfo.isServiceable) {
+      return res.status(400).json({
+        success: false,
+        message: `Delivery is currently not available to pincode ${pincode}`,
+        calculation,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: calculation,
+    });
+  } catch (error) {
+    console.error('Error in validateCheckout:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to validate checkout details',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * @desc    Create a new pending order with stock reservation
+ * @route   POST /api/orders
+ * @access  Public (Guest / User with token/guest cookie)
+ */
+const createOrder = async (req, res) => {
+  try {
+    const { shippingAddress, items = [], couponCode = '', idempotencyKey: bodyIdempotencyKey } = req.body;
+
+    const idempotencyKey =
+      req.headers['x-idempotency-key'] ||
+      bodyIdempotencyKey ||
+      null;
+
+    if (idempotencyKey) {
+      const existingOrder = await Order.findOne({ idempotencyKey });
+      if (existingOrder) {
+        console.log(`[Order API] Returned existing order for idempotency key: ${idempotencyKey}`);
+        return res.status(200).json({
+          success: true,
+          message: 'Order already created (idempotent submission)',
+          data: existingOrder,
+        });
+      }
+    }
+
+    // 1. Strict Server Field Validation
     if (!shippingAddress) {
       return res.status(400).json({
         success: false,
-        message: 'Shipping address is required',
+        message: 'Shipping address details are required',
       });
     }
 
@@ -33,95 +107,165 @@ const createOrder = async (req, res) => {
       state,
       city,
       addressLine,
-      roadArea,
+      roadArea = '',
       pincode,
     } = shippingAddress;
 
-    if (!fullName || !email || !phone || !state || !city || !addressLine || !roadArea || !pincode) {
+    if (!fullName || fullName.trim().length < 2 || fullName.trim().length > 80) {
       return res.status(400).json({
         success: false,
-        message: 'Please fill in all required shipping address fields',
+        message: 'Full name must be between 2 and 80 characters',
       });
     }
 
-    // 3. Calculate order subtotal and validate items
-    let calculatedSubtotal = 0;
-    const formattedItems = items.map((item) => {
-      const price = Number(item.price) || 0;
-      const quantity = Math.max(1, Number(item.quantity) || 1);
-      const itemSubtotal = price * quantity;
-      calculatedSubtotal += itemSubtotal;
-
-      return {
-        productId: item.productId || item._id,
-        name: item.name || 'Saree Product',
-        fabric: item.fabric || '',
-        colorName: item.colorName || '',
-        colorHex: item.colorHex || '',
-        image: item.image || item.thumbnail || '',
-        quantity,
-        price,
-        itemSubtotal,
-      };
-    });
-
-    // 4. Calculate coupon discount
-    let discountPercent = 0;
-    const cleanCoupon = couponCode ? couponCode.trim().toUpperCase() : '';
-    if (cleanCoupon === 'ANJALI10' || cleanCoupon === 'SAREE10') {
-      discountPercent = 10;
-    } else if (cleanCoupon === 'ANJALI20') {
-      discountPercent = 20;
+    const cleanPhone = phone ? phone.toString().replace(/[\s\-\+\(\)]/g, '').slice(-10) : '';
+    if (!cleanPhone || !/^[6-9]\d{9}$/.test(cleanPhone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter a valid 10-digit Indian phone number starting with 6-9',
+      });
     }
 
-    const discountAmount = Math.round((calculatedSubtotal * discountPercent) / 100);
-    const discountedSubtotal = Math.max(0, calculatedSubtotal - discountAmount);
+    if (!email || !/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter a valid email address',
+      });
+    }
 
-    // 5. Calculate shipping delivery charge
-    const deliveryCharge = discountedSubtotal > 3000 || items.length === 0 ? 0 : 199;
-    const grandTotalAmount = Math.max(0, discountedSubtotal + deliveryCharge);
+    if (!addressLine || addressLine.trim().length < 3) {
+      return res.status(400).json({
+        success: false,
+        message: 'Address Line 1 is required',
+      });
+    }
 
-    // 6. Generate unique Order Number
+    const cleanPincode = pincode ? pincode.toString().trim() : '';
+    if (!cleanPincode || !/^[1-9][0-9]{5}$/.test(cleanPincode)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Pincode must be 6 digits and cannot start with 0',
+      });
+    }
+
+    // 2. Fetch User/Guest Cart & Items
+    let cart = null;
+    let targetItems = items;
+    let activeCoupon = couponCode;
+
+    if (req.user && req.user._id) {
+      cart = await Cart.findOne({ userId: req.user._id });
+    } else if (req.guestToken) {
+      cart = await Cart.findOne({ guestToken: req.guestToken });
+    }
+
+    if (cart && cart.items && cart.items.length > 0) {
+      targetItems = cart.items;
+      if (!activeCoupon) activeCoupon = cart.couponCode;
+    }
+
+    if (!targetItems || targetItems.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot place order with an empty cart',
+      });
+    }
+
+    // 3. Re-calculate ALL totals on the backend via calculateCartTotals
+    const calculation = await calculateCartTotals({
+      cartItems: targetItems,
+      couponCode: activeCoupon,
+      pincode: cleanPincode,
+    });
+
+    if (calculation.items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'None of the items in your cart are currently available to purchase',
+      });
+    }
+
+    if (calculation.pincodeInfo.isServiceable === false) {
+      return res.status(400).json({
+        success: false,
+        message: `We do not deliver to pincode ${cleanPincode} yet`,
+      });
+    }
+
+    // 4. Construct Order Document (Pending state with 15-min stock reservation)
     const orderNumber = `ORD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const userId = req.user ? req.user._id : null;
+    const stockReservedUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes stock lock
 
-    // 7. Check user auth context
-    const userId = req.user ? req.user.id : null;
+    const formattedOrderItems = calculation.items.map((item) => ({
+      productId: item.productId,
+      name: item.name,
+      fabric: item.fabric || '',
+      colorName: item.color?.name || '',
+      colorHex: item.color?.hexCode || '',
+      image: item.thumbnail || '',
+      quantity: item.quantity,
+      price: item.unitPrice,
+      itemSubtotal: item.lineTotal,
+    }));
 
-    // 8. Create Order document
     const newOrder = new Order({
       orderNumber,
       userId,
-      items: formattedItems,
+      items: formattedOrderItems,
       shippingAddress: {
-        fullName,
-        email,
-        phone,
-        country,
-        state,
-        city,
-        addressLine,
-        roadArea,
-        pincode,
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        phone: cleanPhone,
+        country: country || 'India',
+        state: state || calculation.pincodeInfo.state || 'State',
+        city: city || calculation.pincodeInfo.city || 'City',
+        addressLine: addressLine.trim(),
+        roadArea: roadArea ? roadArea.trim() : '',
+        pincode: cleanPincode,
       },
       orderSummary: {
-        subtotal: calculatedSubtotal,
-        discount: discountAmount,
-        deliveryCharge,
-        totalAmount: grandTotalAmount,
-        couponCode: cleanCoupon,
+        subtotal: calculation.summary.subtotal,
+        discount: calculation.summary.discount,
+        deliveryCharge: calculation.summary.shipping,
+        totalAmount: calculation.summary.total,
+        couponCode: calculation.coupon.code || '',
       },
       paymentDetails: {
-        paymentMethod: paymentMethod || 'Pending',
-        paymentStatus: 'Pending',
+        paymentMethod: req.body.paymentMethod || 'Razorpay',
+        paymentStatus: 'unpaid',
       },
-      orderStatus: 'Placed',
+      orderStatus: 'pending',
+      currency: 'INR',
+      stock_reserved_until: stockReservedUntil,
+      idempotencyKey: idempotencyKey || null,
+      statusHistory: [
+        {
+          orderStatus: 'pending',
+          paymentStatus: 'unpaid',
+          timestamp: new Date(),
+          source: 'user',
+          reason: 'Initial order created in pending state with 15-min stock reservation',
+        },
+      ],
     });
 
+    // Save initial order
     const savedOrder = await newOrder.save();
+
+    // Reserve stock atomically ($inc: -quantity)
+    for (const orderItem of formattedOrderItems) {
+      await Saree.updateOne(
+        { _id: orderItem.productId, stock: { $gte: orderItem.quantity } },
+        { $inc: { stock: -orderItem.quantity, salesCount: orderItem.quantity } }
+      );
+    }
+
+    console.log(`[Order API] Created pending order ${orderNumber} for user: ${userId || 'Guest'}. Reserved stock until ${stockReservedUntil.toISOString()}`);
 
     res.status(201).json({
       success: true,
-      message: 'Order created successfully',
+      message: 'Order created in pending state',
       data: savedOrder,
     });
   } catch (error) {
@@ -135,9 +279,9 @@ const createOrder = async (req, res) => {
 };
 
 /**
- * @desc    Get order details by order ID or orderNumber
+ * @desc    Get order by ID or orderNumber
  * @route   GET /api/orders/:id
- * @access  Public / Private
+ * @access  Public / User
  */
 const getOrderById = async (req, res) => {
   try {
@@ -155,6 +299,14 @@ const getOrderById = async (req, res) => {
       });
     }
 
+    // Security check: restrict user to reading only their own order if logged in
+    if (req.user && order.userId && order.userId._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to view this order',
+      });
+    }
+
     res.status(200).json({
       success: true,
       data: order,
@@ -169,9 +321,9 @@ const getOrderById = async (req, res) => {
 };
 
 /**
- * @desc    Get orders for current authenticated user
+ * @desc    Get logged in user orders
  * @route   GET /api/orders/my-orders
- * @access  Private
+ * @access  Private (Auth User)
  */
 const getUserOrders = async (req, res) => {
   try {
@@ -182,7 +334,7 @@ const getUserOrders = async (req, res) => {
       });
     }
 
-    const orders = await Order.find({ userId: req.user.id }).sort({ createdAt: -1 });
+    const orders = await Order.find({ userId: req.user._id }).sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -198,51 +350,9 @@ const getUserOrders = async (req, res) => {
   }
 };
 
-/**
- * @desc    Update order payment status / method
- * @route   PATCH /api/orders/:id/payment
- * @access  Public / Private
- */
-const updatePaymentStatus = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { paymentMethod, paymentStatus, transactionId } = req.body;
-
-    const order = await Order.findById(id);
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found',
-      });
-    }
-
-    if (paymentMethod) order.paymentDetails.paymentMethod = paymentMethod;
-    if (paymentStatus) order.paymentDetails.paymentStatus = paymentStatus;
-    if (transactionId) order.paymentDetails.transactionId = transactionId;
-
-    if (paymentStatus === 'Paid') {
-      order.orderStatus = 'Processing';
-    }
-
-    await order.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Payment status updated successfully',
-      data: order,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server error while updating payment status',
-      error: error.message,
-    });
-  }
-};
-
 module.exports = {
+  validateCheckout,
   createOrder,
   getOrderById,
   getUserOrders,
-  updatePaymentStatus,
 };

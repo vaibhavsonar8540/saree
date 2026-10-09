@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchProductsAction,
   createProductAction,
+  updateProductAction,
   deleteProductAction,
   clearProductFeedback,
 } from '../redux/slices/productSlice';
@@ -329,32 +330,60 @@ export default function ProductManager() {
     dispatch(deleteProductAction(id));
   };
 
+  const handleToggleActive = async (product) => {
+    const newActive = product.isActive === false ? true : false;
+    const resAction = await dispatch(
+      updateProductAction({ id: product._id, sareeData: { isActive: newActive } })
+    );
+    if (updateProductAction.fulfilled.match(resAction)) {
+      showLocalFeedback('success', `'${product.name}' status set to ${newActive ? 'ACTIVE' : 'INACTIVE'}`);
+    }
+  };
+
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-6 font-sans">
-      {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
+      {/* Header Banner with Primary Add Product Button */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-200/80">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-            <ShoppingBag className="w-7 h-7 text-slate-900" /> Saree Products Manager
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+            <ShoppingBag className="w-7 h-7 text-emerald-600" /> Saree Products Manager
           </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            Add, update, and manage saree product inventory with color-coded variation media.
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            Manage saree inventory cards, toggle active storefront visibility, and upload variation media.
           </p>
         </div>
 
-        <button
-          onClick={loadAllData}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-all border border-slate-200"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh Products
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={loadAllData}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all border border-slate-200"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab(activeTab === 'list' ? 'add' : 'list')}
+            className="flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95"
+          >
+            {activeTab === 'list' ? (
+              <>
+                <Plus className="w-4 h-4" /> Add New Saree
+              </>
+            ) : (
+              <>
+                <ListFilter className="w-4 h-4" /> View All Products ({products.length})
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Toast Alert */}
       {localFeedback && (
         <div
-          className={`p-4 rounded-xl flex items-center justify-between border text-sm font-semibold transition-all shadow-xs ${
+          className={`p-4 rounded-2xl flex items-center justify-between border text-sm font-semibold transition-all shadow-xs ${
             localFeedback.type === 'success'
               ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
               : 'bg-rose-50 text-rose-800 border-rose-200'
@@ -371,117 +400,171 @@ export default function ProductManager() {
         </div>
       )}
 
-      {/* TAB NAVIGATION LAYOUT */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="flex border-b border-slate-200 bg-slate-50/80 p-2 gap-2">
-          <button
-            onClick={() => setActiveTab('list')}
-            className={`flex-1 py-3 px-6 rounded-xl font-bold text-xs tracking-wider flex items-center justify-center gap-2 transition-all ${
-              activeTab === 'list'
-                ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
-                : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
-            }`}
-          >
-            <ListFilter className="w-4 h-4" /> ALL PRODUCTS ({products.length})
-          </button>
+      {/* MAIN VIEW AREA: PRODUCT CARDS OR ADD FORM */}
+      {activeTab === 'list' ? (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="font-black text-xs uppercase tracking-widest text-slate-400">
+              LIVE PRODUCT CARDS ({products.length})
+            </h3>
+            <span className="text-xs text-slate-400 font-medium">
+              Toggle switch controls storefront visibility
+            </span>
+          </div>
 
-          <button
-            onClick={() => setActiveTab('add')}
-            className={`flex-1 py-3 px-6 rounded-xl font-bold text-xs tracking-wider flex items-center justify-center gap-2 transition-all ${
-              activeTab === 'add'
-                ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
-                : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
-            }`}
-          >
-            <Plus className="w-4 h-4" /> ADD NEW SAREE
-          </button>
-        </div>
-
-        {/* TAB 1: PRODUCT LIST TABLE */}
-        {activeTab === 'list' && (
-          <div className="p-8 space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-sm uppercase tracking-wider text-slate-700">
-                Saree Inventory Table
-              </h3>
+          {products.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-300 shadow-xs">
+              <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+              <p className="text-sm font-bold text-slate-700">No saree products found.</p>
+              <p className="text-xs text-slate-400 mt-1">Click + Add New Saree at the top to create your first item.</p>
+              <button
+                onClick={() => setActiveTab('add')}
+                className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all"
+              >
+                <Plus className="w-4 h-4" /> Add New Saree
+              </button>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {products.map((item) => (
+                <div
+                  key={item._id}
+                  className={`bg-white rounded-3xl border transition-all duration-300 hover:shadow-xl flex flex-col justify-between overflow-hidden relative group ${
+                    item.isActive !== false
+                      ? 'border-slate-200/80 shadow-xs'
+                      : 'border-slate-200 bg-slate-50/50 opacity-90'
+                  }`}
+                >
+                  {/* Card Image Banner & Badges */}
+                  <div className="relative h-56 w-full bg-slate-100 overflow-hidden">
+                    <img
+                      src={
+                        item.thumbnail ||
+                        'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&auto=format&fit=crop'
+                      }
+                      alt={item.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
 
-            {products.length === 0 ? (
-              <div className="text-center py-16 bg-slate-50/50 rounded-2xl border border-dashed border-slate-300">
-                <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto mb-2" />
-                <p className="text-sm font-medium text-slate-500">No saree products found.</p>
-                <p className="text-xs text-slate-400 mt-1">Click Add New Saree to get started.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                <table className="w-full text-left text-sm text-slate-600">
-                  <thead className="bg-slate-50 text-slate-700 uppercase font-bold text-[11px] tracking-wider border-b border-slate-200">
-                    <tr>
-                      <th className="px-4 py-3">Product</th>
-                      <th className="px-4 py-3">SKU</th>
-                      <th className="px-4 py-3">Category</th>
-                      <th className="px-4 py-3">Price</th>
-                      <th className="px-4 py-3">Stock</th>
-                      <th className="px-4 py-3 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {products.map((item) => (
-                      <tr key={item._id} className="hover:bg-slate-50/80 transition-all">
-                        <td className="px-4 py-3 flex items-center gap-3">
-                          <img
-                            src={item.thumbnail || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=100&auto=format&fit=crop'}
-                            alt={item.name}
-                            className="w-12 h-12 rounded-lg object-cover border border-slate-200"
-                          />
-                          <div>
-                            <p className="font-bold text-slate-800">{item.name}</p>
-                            <p className="text-xs text-slate-400">{item.sareeType || item.fabric}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 font-mono text-xs font-bold text-slate-700">{item.SKU}</td>
-                        <td className="px-4 py-3">
-                          <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
-                            {item.category} / {item.subCategory || 'General'}
+                    {/* Stock Badge */}
+                    <div className="absolute top-3 left-3 flex gap-2">
+                      <span
+                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm border backdrop-blur-md ${
+                          item.stock > 0
+                            ? 'bg-emerald-500/90 text-white border-emerald-400'
+                            : 'bg-rose-500/90 text-white border-rose-400'
+                        }`}
+                      >
+                        {item.stock > 0 ? `${item.stock} IN STOCK` : 'OUT OF STOCK'}
+                      </span>
+                    </div>
+
+                    {/* SKU Tag */}
+                    <div className="absolute top-3 right-3">
+                      <span className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-slate-900/80 text-white backdrop-blur-md">
+                        {item.SKU}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card Body */}
+                  <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
+                    <div>
+                      {/* Categories */}
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-100">
+                          {item.category || 'Saree'}
+                        </span>
+                        {item.subCategory && (
+                          <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600">
+                            {item.subCategory}
                           </span>
-                        </td>
-                        <td className="px-4 py-3 font-bold text-slate-800">
-                          ₹{item.discountedPrice > 0 ? item.discountedPrice : item.price}
-                          {item.discountedPrice > 0 && (
-                            <span className="line-through text-xs text-slate-400 ml-1.5 font-normal">
-                              ₹{item.price}
+                        )}
+                        {item.fabric && (
+                          <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-100">
+                            {item.fabric}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Product Name */}
+                      <h3 className="font-black text-base text-slate-900 tracking-tight line-clamp-1">
+                        {item.name}
+                      </h3>
+                      <p className="text-xs text-slate-400 line-clamp-2 mt-1">
+                        {item.description || 'Luxury handcrafted designer saree.'}
+                      </p>
+                    </div>
+
+                    {/* Price & Actions Row */}
+                    <div className="pt-4 border-t border-slate-100 space-y-3">
+                      <div className="flex items-baseline justify-between">
+                        <div>
+                          <span className="text-xs text-slate-400 font-bold uppercase block text-[10px]">Price</span>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-xl font-black text-slate-900">
+                              ₹{item.discountedPrice > 0 ? item.discountedPrice : item.price}
                             </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
+                            {item.discountedPrice > 0 && (
+                              <span className="line-through text-xs text-slate-400 font-normal">
+                                ₹{item.price}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* ACTIVE TOGGLE SWITCH */}
+                        <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200/80">
                           <span
-                            className={`px-2 py-0.5 rounded-md text-xs font-bold ${
-                              item.stock > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                            className={`text-[10px] font-black uppercase tracking-wider ${
+                              item.isActive !== false ? 'text-emerald-700' : 'text-slate-400'
                             }`}
                           >
-                            {item.stock} in stock
+                            {item.isActive !== false ? 'ACTIVE' : 'INACTIVE'}
                           </span>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            onClick={() => handleDeleteProduct(item._id, item.name)}
-                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                            title="Delete Product"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
 
-        {/* TAB 2: CREATE SAREE PRODUCT FORM */}
-        {activeTab === 'add' && (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleActive(item)}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                              item.isActive !== false ? 'bg-emerald-500' : 'bg-slate-300'
+                            }`}
+                            role="switch"
+                            aria-checked={item.isActive !== false}
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                item.isActive !== false ? 'translate-x-5' : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Footer Actions */}
+                      <div className="flex items-center justify-between pt-2">
+                        <span className="text-[11px] text-slate-400 font-medium">
+                          {item.colors?.length || 0} Color Variants
+                        </span>
+
+                        <button
+                          onClick={() => handleDeleteProduct(item._id, item.name)}
+                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                          title="Delete Product"
+                        >
+                          <Trash2 className="w-4.5 h-4.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+
           <div className="p-8">
             <form onSubmit={handleCreateProduct} className="space-y-8">
               {/* Step 1: Basic & Full Controller Specifications */}
@@ -1164,8 +1247,8 @@ export default function ProductManager() {
               </div>
             </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

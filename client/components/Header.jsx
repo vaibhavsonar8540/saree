@@ -128,13 +128,12 @@ export default function Header() {
     };
   }, [isMobileMenuOpen]);
 
-  const updateCartCount = () => {
+  const updateCartCount = async () => {
     try {
-      const saved = localStorage.getItem("anjali_cart");
-      if (saved) {
-        const items = JSON.parse(saved);
-        const total = Array.isArray(items) ? items.length : 0;
-        setCartCount(total);
+      const { getCartApi } = await import("@/service/cartService");
+      const res = await getCartApi();
+      if (res?.success && res?.data?.items) {
+        setCartCount(res.data.items.length);
       } else {
         setCartCount(0);
       }

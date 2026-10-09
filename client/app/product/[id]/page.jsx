@@ -163,41 +163,15 @@ export default function ProductDetailPage() {
     setActiveMedia({ type: "image", url: firstImg });
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     try {
-      const existing = JSON.parse(localStorage.getItem("anjali_cart") || "[]");
+      const { addToCartApi } = await import("@/service/cartService");
       const targetProdId = product?._id || productId;
-      const foundIdx = existing.findIndex((item) => item.productId === targetProdId || item._id === targetProdId);
-
-      if (foundIdx > -1) {
-        // Already in cart
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent("showCartNotice", {
-              detail: { message: `"${product?.name || product?.title || 'This saree'}" is already added to your cart!` },
-            })
-          );
-        }
-      } else {
-        const newItem = {
-          _id: `cart-${Date.now()}`,
-          productId: targetProdId,
-          name: product?.name || product?.title || "Handcrafted Silk Saree",
-          fabric: product?.fabric || "Handloom Silk",
-          colorName: activeColorMediaObj?.colorName || activeColorMediaObj?.colorId?.name || "Original Shade",
-          colorHex: activeColorMediaObj?.hexCode || activeColorMediaObj?.colorId?.hexCode || "#1B5E3B",
-          price: effectivePrice || 1999,
-          originalPrice: product?.price || effectivePrice || 2499,
-          quantity: quantity || 1,
-          image: activeMedia?.url || product?.thumbnail || "/assets/images/heroBanner.png",
-          inStock: true,
-        };
-        existing.unshift(newItem);
-        localStorage.setItem("anjali_cart", JSON.stringify(existing));
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event("cartUpdated"));
-        }
-      }
+      await addToCartApi({
+        productId: targetProdId,
+        colorId: selectedColorId || null,
+        quantity: quantity || 1,
+      });
       dispatch(openCartDrawer());
     } catch (e) {
       console.error("Cart save error", e);

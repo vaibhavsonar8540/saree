@@ -1,94 +1,65 @@
 const Cart = require('../models/Cart');
 const Saree = require('../models/Saree');
+const { calculateCartTotals } = require('../utils/cartCalculator');
 
 /**
- * Helper to calculate subtotal and format cart response with populated items
+ * Helper to find or create cart for authenticated user or guest token
  */
-const formatCartResponse = (cart) => {
-  let grandTotal = 0;
-  let totalItemsCount = 0;
+const getOrCreateCart = async (req) => {
+  let cart = null;
 
-  const formattedItems = cart.items.map((item) => {
-    const product = item.productId;
-    if (!product) return null;
-
-    const unitPrice =
-      product.discountedPrice && product.discountedPrice > 0
-        ? product.discountedPrice
-        : product.price;
-
-    const itemSubtotal = unitPrice * item.quantity;
-    grandTotal += itemSubtotal;
-    totalItemsCount += item.quantity;
-
-    // Selected color media if available
-    let selectedColorMedia = null;
-    if (item.colorId && Array.isArray(product.colorMedia)) {
-      selectedColorMedia = product.colorMedia.find(
-        (m) => m.colorId && m.colorId._id.toString() === item.colorId._id.toString()
-      );
+  if (req.user && req.user._id) {
+    cart = await Cart.findOne({ userId: req.user._id });
+    if (!cart) {
+      // If guest cart exists for this session, migrate it to user
+      if (req.guestToken) {
+        cart = await Cart.findOne({ guestToken: req.guestToken });
+        if (cart) {
+          cart.userId = req.user._id;
+          cart.guestToken = null;
+          await cart.save();
+        }
+      }
     }
+    if (!cart) {
+      cart = await Cart.create({ userId: req.user._id, items: [] });
+    }
+  } else if (req.guestToken) {
+    cart = await Cart.findOne({ guestToken: req.guestToken });
+    if (!cart) {
+      cart = await Cart.create({ guestToken: req.guestToken, items: [] });
+    }
+  }
 
-    return {
-      _id: item._id,
-      product: {
-        _id: product._id,
-        name: product.name,
-        SKU: product.SKU,
-        price: product.price,
-        discountedPrice: product.discountedPrice,
-        thumbnail: selectedColorMedia?.thumbnail || product.thumbnail,
-        stock: product.stock,
-        isActive: product.isActive,
-      },
-      color: item.colorId
-        ? {
-            _id: item.colorId._id,
-            name: item.colorId.name,
-            hexCode: item.colorId.hexCode,
-          }
-        : null,
-      colorMedia: selectedColorMedia || null,
-      quantity: item.quantity,
-      unitPrice,
-      itemSubtotal,
-    };
-  }).filter(Boolean);
-
-  return {
-    cartId: cart._id,
-    userId: cart.userId,
-    itemsCount: formattedItems.length,
-    totalQuantity: totalItemsCount,
-    grandTotal,
-    items: formattedItems,
-  };
+  return cart;
 };
 
-// @desc    Get current user's cart
+// @desc    Get current cart (user or guest)
 // @route   GET /api/cart
-// @access  Private
+// @access  Public (Guest/User)
 const getCart = async (req, res) => {
   try {
-    let cart = await Cart.findOne({ userId: req.user.id })
-      .populate({
-        path: 'items.productId',
-        select: 'name SKU price discountedPrice thumbnail stock isActive colorMedia',
-        populate: { path: 'colorMedia.colorId', select: 'name hexCode' },
-      })
-      .populate('items.colorId', 'name hexCode');
+    const cart = await getOrCreateCart(req);
+    const { pincode } = req.query;
 
-    if (!cart) {
-      cart = await Cart.create({ userId: req.user.id, items: [] });
-    }
-
-    const formattedCart = formatCartResponse(cart);
+    const calculation = await calculateCartTotals({
+      cartItems: cart ? cart.items : [],
+      couponCode: cart ? cart.couponCode : '',
+      pincode: pincode || '',
+    });
 
     res.status(200).json({
       success: true,
-      data: formattedCart,
+      data: {
+        cartId: cart ? cart._id : null,
+        items: calculation.items,
+        summary: calculation.summary,
+        coupon: calculation.coupon,
+        warnings: calculation.warnings,
+      },
     });
   } catch (error) {
+    console.error('Error in getCart:', error);
     res.status(500).json({
       success: false,
       message: 'Server error while fetching cart',
@@ -97,31 +68,30 @@ const getCart = async (req, res) => {
   }
 };
 
-// @desc    Add product to user's cart
+// @desc    Add product to cart
 // @route   POST /api/cart
-// @access  Private
+// @access  Public (Guest/User)
 const addToCart = async (req, res) => {
   try {
     const { productId, colorId, quantity = 1 } = req.body;
+    // NOTE: Ignore any price, discount, or total sent in body! Backend is single source of truth.
 
     if (!productId) {
       return res.status(400).json({
         success: false,
-        message: 'Product ID (productId) is required',
+        message: 'productId is required',
       });
     }
 
-    // Verify product exists & active
     const product = await Saree.findById(productId);
     if (!product || !product.isActive) {
       return res.status(404).json({
         success: false,
-        message: 'Product not found or currently unavailable',
+        message: 'Product not found or unavailable',
       });
     }
 
-    // Check stock
-    const qtyToAdd = Math.max(1, parseInt(quantity, 10));
+    const qtyToAdd = Math.max(1, parseInt(quantity, 10) || 1);
     if (product.stock < qtyToAdd) {
       return res.status(400).json({
         success: false,
@@ -129,55 +99,48 @@ const addToCart = async (req, res) => {
       });
     }
 
-    const unitPrice =
-      product.discountedPrice && product.discountedPrice > 0
-        ? product.discountedPrice
-        : product.price;
+    const cart = await getOrCreateCart(req);
 
-    let cart = await Cart.findOne({ userId: req.user.id });
-
-    if (!cart) {
-      cart = new Cart({ userId: req.user.id, items: [] });
-    }
-
-    // Check if same product & color combination exists in cart
+    // Check if item combination already exists in cart
     const existingIndex = cart.items.findIndex(
       (item) =>
-        item.productId.toString() === productId &&
-        (colorId ? item.colorId && item.colorId.toString() === colorId : !item.colorId)
+        item.productId.toString() === productId.toString() &&
+        (colorId
+          ? item.colorId && item.colorId.toString() === colorId.toString()
+          : !item.colorId)
     );
 
     if (existingIndex > -1) {
-      // Update quantity
-      cart.items[existingIndex].quantity += qtyToAdd;
-      cart.items[existingIndex].price = unitPrice;
+      const newQty = cart.items[existingIndex].quantity + qtyToAdd;
+      cart.items[existingIndex].quantity = Math.min(newQty, product.stock);
     } else {
-      // Add new item
       cart.items.push({
-        productId,
+        productId: product._id,
         colorId: colorId || null,
-        quantity: qtyToAdd,
-        price: unitPrice,
+        quantity: Math.min(qtyToAdd, product.stock),
       });
     }
 
     await cart.save();
 
-    // Populate and return updated cart
-    const updatedCart = await Cart.findById(cart._id)
-      .populate({
-        path: 'items.productId',
-        select: 'name SKU price discountedPrice thumbnail stock isActive colorMedia',
-        populate: { path: 'colorMedia.colorId', select: 'name hexCode' },
-      })
-      .populate('items.colorId', 'name hexCode');
+    const calculation = await calculateCartTotals({
+      cartItems: cart.items,
+      couponCode: cart.couponCode,
+    });
 
     res.status(200).json({
       success: true,
-      message: 'Product added to cart successfully',
-      data: formatCartResponse(updatedCart),
+      message: 'Item added to cart successfully',
+      data: {
+        cartId: cart._id,
+        items: calculation.items,
+        summary: calculation.summary,
+        coupon: calculation.coupon,
+        warnings: calculation.warnings,
+      },
     });
   } catch (error) {
+    console.error('Error in addToCart:', error);
     res.status(500).json({
       success: false,
       message: 'Server error while adding to cart',
@@ -188,30 +151,26 @@ const addToCart = async (req, res) => {
 
 // @desc    Update cart item quantity
 // @route   PUT /api/cart/items/:itemId
-// @access  Private
+// @access  Public (Guest/User)
 const updateCartItem = async (req, res) => {
   try {
     const { itemId } = req.params;
     const { quantity } = req.body;
 
-    if (quantity === undefined) {
+    const newQty = parseInt(quantity, 10);
+    if (quantity === undefined || isNaN(quantity) || isNaN(newQty)) {
       return res.status(400).json({
         success: false,
-        message: 'Quantity is required',
+        message: 'Valid numeric quantity is required',
       });
     }
 
-    const newQty = parseInt(quantity, 10);
-    let cart = await Cart.findOne({ userId: req.user.id });
+    const cart = await getOrCreateCart(req);
 
-    if (!cart) {
-      return res.status(404).json({
-        success: false,
-        message: 'Cart not found',
-      });
-    }
+    const itemIndex = cart.items.findIndex(
+      (item) => item._id && item._id.toString() === itemId
+    );
 
-    const itemIndex = cart.items.findIndex((item) => item._id.toString() === itemId);
     if (itemIndex === -1) {
       return res.status(404).json({
         success: false,
@@ -220,28 +179,34 @@ const updateCartItem = async (req, res) => {
     }
 
     if (newQty <= 0) {
-      // Remove item if quantity is 0 or less
       cart.items.splice(itemIndex, 1);
     } else {
-      cart.items[itemIndex].quantity = newQty;
+      // Check available DB stock
+      const product = await Saree.findById(cart.items[itemIndex].productId);
+      const maxStock = product ? product.stock : newQty;
+      cart.items[itemIndex].quantity = Math.min(newQty, maxStock);
     }
 
     await cart.save();
 
-    const updatedCart = await Cart.findById(cart._id)
-      .populate({
-        path: 'items.productId',
-        select: 'name SKU price discountedPrice thumbnail stock isActive colorMedia',
-        populate: { path: 'colorMedia.colorId', select: 'name hexCode' },
-      })
-      .populate('items.colorId', 'name hexCode');
+    const calculation = await calculateCartTotals({
+      cartItems: cart.items,
+      couponCode: cart.couponCode,
+    });
 
     res.status(200).json({
       success: true,
-      message: newQty <= 0 ? 'Item removed from cart' : 'Cart item updated',
-      data: formatCartResponse(updatedCart),
+      message: newQty <= 0 ? 'Item removed from cart' : 'Cart item quantity updated',
+      data: {
+        cartId: cart._id,
+        items: calculation.items,
+        summary: calculation.summary,
+        coupon: calculation.coupon,
+        warnings: calculation.warnings,
+      },
     });
   } catch (error) {
+    console.error('Error in updateCartItem:', error);
     res.status(500).json({
       success: false,
       message: 'Server error while updating cart item',
@@ -250,38 +215,37 @@ const updateCartItem = async (req, res) => {
   }
 };
 
-// @desc    Remove single item from cart
+// @desc    Remove item from cart
 // @route   DELETE /api/cart/items/:itemId
-// @access  Private
+// @access  Public (Guest/User)
 const removeFromCart = async (req, res) => {
   try {
     const { itemId } = req.params;
-    let cart = await Cart.findOne({ userId: req.user.id });
+    const cart = await getOrCreateCart(req);
 
-    if (!cart) {
-      return res.status(404).json({
-        success: false,
-        message: 'Cart not found',
-      });
-    }
-
-    cart.items = cart.items.filter((item) => item._id.toString() !== itemId);
+    cart.items = cart.items.filter(
+      (item) => item._id && item._id.toString() !== itemId
+    );
     await cart.save();
 
-    const updatedCart = await Cart.findById(cart._id)
-      .populate({
-        path: 'items.productId',
-        select: 'name SKU price discountedPrice thumbnail stock isActive colorMedia',
-        populate: { path: 'colorMedia.colorId', select: 'name hexCode' },
-      })
-      .populate('items.colorId', 'name hexCode');
+    const calculation = await calculateCartTotals({
+      cartItems: cart.items,
+      couponCode: cart.couponCode,
+    });
 
     res.status(200).json({
       success: true,
-      message: 'Item removed from cart successfully',
-      data: formatCartResponse(updatedCart),
+      message: 'Item removed from cart',
+      data: {
+        cartId: cart._id,
+        items: calculation.items,
+        summary: calculation.summary,
+        coupon: calculation.coupon,
+        warnings: calculation.warnings,
+      },
     });
   } catch (error) {
+    console.error('Error in removeFromCart:', error);
     res.status(500).json({
       success: false,
       message: 'Server error while removing item from cart',
@@ -290,26 +254,123 @@ const removeFromCart = async (req, res) => {
   }
 };
 
-// @desc    Clear all items in cart
-// @route   DELETE /api/cart
-// @access  Private
-const clearCart = async (req, res) => {
+// @desc    Apply coupon to cart
+// @route   POST /api/cart/coupon
+// @access  Public (Guest/User)
+const applyCoupon = async (req, res) => {
   try {
-    let cart = await Cart.findOne({ userId: req.user.id });
+    const { couponCode } = req.body;
+    if (!couponCode || typeof couponCode !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Coupon code is required',
+      });
+    }
 
-    if (cart) {
-      cart.items = [];
-      await cart.save();
+    const cart = await getOrCreateCart(req);
+    cart.couponCode = couponCode.trim().toUpperCase();
+    await cart.save();
+
+    const calculation = await calculateCartTotals({
+      cartItems: cart.items,
+      couponCode: cart.couponCode,
+    });
+
+    if (!calculation.coupon.applied) {
+      return res.status(400).json({
+        success: false,
+        message: calculation.coupon.message || 'Invalid coupon code',
+        data: {
+          cartId: cart._id,
+          items: calculation.items,
+          summary: calculation.summary,
+          coupon: calculation.coupon,
+          warnings: calculation.warnings,
+        },
+      });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Cart cleared successfully',
+      message: calculation.coupon.message,
       data: {
-        userId: req.user.id,
-        itemsCount: 0,
-        grandTotal: 0,
+        cartId: cart._id,
+        items: calculation.items,
+        summary: calculation.summary,
+        coupon: calculation.coupon,
+        warnings: calculation.warnings,
+      },
+    });
+  } catch (error) {
+    console.error('Error in applyCoupon:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while applying coupon',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Remove coupon from cart
+// @route   DELETE /api/cart/coupon
+// @access  Public (Guest/User)
+const removeCoupon = async (req, res) => {
+  try {
+    const cart = await getOrCreateCart(req);
+    cart.couponCode = '';
+    await cart.save();
+
+    const calculation = await calculateCartTotals({
+      cartItems: cart.items,
+      couponCode: '',
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Coupon removed successfully',
+      data: {
+        cartId: cart._id,
+        items: calculation.items,
+        summary: calculation.summary,
+        coupon: calculation.coupon,
+        warnings: calculation.warnings,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error while removing coupon',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Clear entire cart
+// @route   DELETE /api/cart
+// @access  Public (Guest/User)
+const clearCart = async (req, res) => {
+  try {
+    const cart = await getOrCreateCart(req);
+    cart.items = [];
+    cart.couponCode = '';
+    await cart.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Cart cleared',
+      data: {
+        cartId: cart._id,
         items: [],
+        summary: {
+          subtotal: 0,
+          discount: 0,
+          shipping: 0,
+          tax: 0,
+          total: 0,
+          currency: 'INR',
+        },
+        coupon: { code: '', applied: false },
+        warnings: [],
       },
     });
   } catch (error) {
@@ -326,5 +387,7 @@ module.exports = {
   addToCart,
   updateCartItem,
   removeFromCart,
+  applyCoupon,
+  removeCoupon,
   clearCart,
 };

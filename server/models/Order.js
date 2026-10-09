@@ -79,13 +79,33 @@ const shippingAddressSchema = new mongoose.Schema({
   },
   roadArea: {
     type: String,
-    required: [true, 'Road/Area is required'],
+    default: '',
   },
   pincode: {
     type: String,
     required: [true, 'Pincode is required'],
   },
 });
+
+const statusHistorySchema = new mongoose.Schema(
+  {
+    orderStatus: { type: String, required: true },
+    paymentStatus: { type: String, required: true },
+    timestamp: { type: Date, default: Date.now },
+    source: { type: String, default: 'system' }, // verify, webhook, admin, system
+    reason: { type: String, default: '' },
+  },
+  { _id: false }
+);
+
+const refundDetailsSchema = new mongoose.Schema(
+  {
+    refundId: { type: String, default: '' },
+    refundedAmount: { type: Number, default: 0 },
+    refundedAt: { type: Date, default: null },
+  },
+  { _id: false }
+);
 
 const orderSchema = new mongoose.Schema(
   {
@@ -98,6 +118,7 @@ const orderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       default: null,
+      index: true,
     },
     items: [orderItemSchema],
     shippingAddress: shippingAddressSchema,
@@ -108,6 +129,10 @@ const orderSchema = new mongoose.Schema(
       totalAmount: { type: Number, required: true },
       couponCode: { type: String, default: '' },
     },
+    currency: {
+      type: String,
+      default: 'INR',
+    },
     paymentDetails: {
       paymentMethod: {
         type: String,
@@ -115,8 +140,8 @@ const orderSchema = new mongoose.Schema(
       },
       paymentStatus: {
         type: String,
-        enum: ['Pending', 'Paid', 'Failed'],
-        default: 'Pending',
+        enum: ['unpaid', 'paid', 'failed', 'refunded', 'partially_refunded', 'manual_review', 'Pending', 'Paid', 'Failed'],
+        default: 'unpaid',
       },
       transactionId: {
         type: String,
@@ -125,13 +150,53 @@ const orderSchema = new mongoose.Schema(
     },
     orderStatus: {
       type: String,
-      enum: ['Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
-      default: 'Placed',
+      enum: ['pending', 'paid', 'shipped', 'delivered', 'cancelled', 'refunded', 'Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
+      default: 'pending',
+    },
+    razorpay_order_id: {
+      type: String,
+      index: true,
+    },
+    razorpay_payment_id: {
+      type: String,
+      index: true,
+    },
+    razorpay_signature: {
+      type: String,
+      default: '',
+    },
+    paid_at: {
+      type: Date,
+      default: null,
+    },
+    cancelled_at: {
+      type: Date,
+      default: null,
+    },
+    stock_reserved_until: {
+      type: Date,
+      default: null,
+    },
+    confirmationSent: {
+      type: Boolean,
+      default: false,
+    },
+    refundDetails: {
+      type: refundDetailsSchema,
+      default: () => ({}),
+    },
+    statusHistory: [statusHistorySchema],
+    idempotencyKey: {
+      type: String,
+      default: null,
+      sparse: true,
     },
   },
   {
     timestamps: true,
   }
 );
+
+orderSchema.index({ 'shippingAddress.pincode': 1 });
 
 module.exports = mongoose.model('Order', orderSchema);

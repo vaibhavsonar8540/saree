@@ -90,30 +90,10 @@ export const seedSubCategoriesApi = async () => {
   return response.data;
 };
 
-// Color Endpoints
-export const fetchColors = async () => {
-  const response = await api.get('/colors');
-  return response.data;
-};
-
-export const createColorApi = async (name, hexCode) => {
-  const response = await api.post('/colors', { name, hexCode });
-  return response.data;
-};
-
-export const deleteColorApi = async (id) => {
-  const response = await api.delete(`/colors/${id}`);
-  return response.data;
-};
-
-export const seedColorsApi = async () => {
-  const response = await api.post('/colors/seed');
-  return response.data;
-};
-
 // Saree Product Endpoints
 export const fetchSarees = async (params = {}) => {
-  const response = await api.get('/sarees', { params });
+  const queryParams = { limit: 1000, isActive: 'all', ...params };
+  const response = await api.get('/sarees', { params: queryParams });
   return response.data;
 };
 

@@ -14,7 +14,7 @@ export const fetchHeaderCategories = async () => {
         includeSubcategories: true,
         isActive: true,
       },
-      timeout: 10000,
+      timeout: 15000,
     });
 
     if (response.data && response.data.success) {
@@ -36,7 +36,7 @@ export const fetchSubCategories = async () => {
   try {
     const response = await axios.get(`${API_BASE_URL}/subcategories`, {
       params: { isActive: true },
-      timeout: 10000,
+      timeout: 15000,
     });
 
     if (response.data && response.data.success) {

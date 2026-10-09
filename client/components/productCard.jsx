@@ -110,46 +110,21 @@ const ProductCard = ({
     if (onAddToWishlist) onAddToWishlist(product, nowStatus);
   };
 
-  const handleCartClick = (e) => {
+  const handleCartClick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (onAddToCart) {
       onAddToCart(product);
     } else {
       try {
-        const existing = JSON.parse(localStorage.getItem("anjali_cart") || "[]");
-        const prodId = _id;
-        const foundIdx = existing.findIndex((item) => item.productId === prodId || item._id === prodId);
-
-        if (foundIdx > -1) {
-          // Already in cart: don't add, show message
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("showCartNotice", {
-                detail: { message: `"${productTitle}" is already added to your cart!` },
-              })
-            );
-          }
-        } else {
-          const newItem = {
-            _id: `cart-${Date.now()}`,
-            productId: prodId,
-            name: productTitle,
-            fabric: fabric || "Handloom Silk",
-            price: finalPrice,
-            originalPrice: comparePrice || finalPrice,
-            quantity: 1,
-            image: displayImage,
-            inStock: true,
-          };
-          existing.unshift(newItem);
-          localStorage.setItem("anjali_cart", JSON.stringify(existing));
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(new Event("cartUpdated"));
-          }
-        }
-      } catch (e) {
-        console.error("Cart save error", e);
+        const { addToCartApi } = await import("@/service/cartService");
+        await addToCartApi({
+          productId: _id,
+          colorId: (colors && colors[0] && colors[0]._id) || null,
+          quantity: 1,
+        });
+      } catch (err) {
+        console.error("Cart save error", err);
       }
     }
     dispatch(openCartDrawer());

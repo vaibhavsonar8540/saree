@@ -25,16 +25,13 @@ export default function CartDrawer() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [noticeMessage, setNoticeMessage] = useState("");
 
-  const loadCartFromStorage = async () => {
+  const loadCartFromBackend = async () => {
     try {
-      const savedCart = localStorage.getItem("anjali_cart");
-      let rawCart = savedCart ? JSON.parse(savedCart) : [];
-
-      if (!Array.isArray(rawCart)) {
-        rawCart = [];
+      const { getCartApi } = await import("@/service/cartService");
+      const res = await getCartApi();
+      if (res?.success && res?.data) {
+        setCartItems(res.data.items || []);
       }
-
-      setCartItems(rawCart);
     } catch (e) {
       setCartItems([]);
     }
@@ -42,7 +39,7 @@ export default function CartDrawer() {
   };
 
   useEffect(() => {
-    loadCartFromStorage();
+    loadCartFromBackend();
 
     const handleShowNotice = (e) => {
       const msg = e.detail?.message || "Item is already added to your cart!";
@@ -51,83 +48,49 @@ export default function CartDrawer() {
     };
 
     if (typeof window !== "undefined") {
-      window.addEventListener("cartUpdated", loadCartFromStorage);
-      window.addEventListener("storage", loadCartFromStorage);
+      window.addEventListener("cartUpdated", loadCartFromBackend);
+      window.addEventListener("storage", loadCartFromBackend);
       window.addEventListener("showCartNotice", handleShowNotice);
     }
 
     return () => {
       if (typeof window !== "undefined") {
-        window.removeEventListener("cartUpdated", loadCartFromStorage);
-        window.removeEventListener("storage", loadCartFromStorage);
+        window.removeEventListener("cartUpdated", loadCartFromBackend);
+        window.removeEventListener("storage", loadCartFromBackend);
         window.removeEventListener("showCartNotice", handleShowNotice);
       }
     };
   }, []);
 
-  // Lock background scroll when drawer is open
-  useEffect(() => {
-    if (isCartDrawerOpen) {
-      document.body.style.overflow = "hidden";
-      if (typeof window !== "undefined" && window.lenis) {
-        window.lenis.stop();
-      }
-    } else {
-      document.body.style.overflow = "";
-      if (typeof window !== "undefined" && window.lenis) {
-        window.lenis.start();
-      }
-    }
-    return () => {
-      document.body.style.overflow = "";
-      if (typeof window !== "undefined" && window.lenis) {
-        window.lenis.start();
-      }
-    };
-  }, [isCartDrawerOpen]);
-
-  // Press ESC to close drawer
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape" && isCartDrawerOpen) {
-        dispatch(closeCartDrawer());
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isCartDrawerOpen, dispatch]);
-
-  const saveCart = (updatedItems) => {
-    setCartItems(updatedItems);
+  const handleUpdateQuantity = async (itemId, currentQty, delta, maxStock = 10) => {
+    const targetQty = Number(currentQty) + Number(delta);
+    if (isNaN(targetQty) || targetQty < 1 || targetQty > maxStock) return;
     try {
-      localStorage.setItem("anjali_cart", JSON.stringify(updatedItems));
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("cartUpdated"));
+      const { updateCartItemApi } = await import("@/service/cartService");
+      const res = await updateCartItemApi(itemId, targetQty);
+      if (res?.success && res?.data) {
+        setCartItems(res.data.items || []);
       }
     } catch (e) {
-      console.error("Failed to save cart to localStorage", e);
+      console.error(e);
     }
   };
 
-  const handleUpdateQuantity = (id, delta) => {
-    const updated = cartItems.map((item) => {
-      if (item._id === id) {
-        const newQty = Math.max(1, Math.min(10, item.quantity + delta));
-        return { ...item, quantity: newQty };
+  const handleRemoveItem = async (itemId) => {
+    try {
+      const { removeFromCartApi } = await import("@/service/cartService");
+      const res = await removeFromCartApi(itemId);
+      if (res?.success && res?.data) {
+        setCartItems(res.data.items || []);
       }
-      return item;
-    });
-    saveCart(updated);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const handleRemoveItem = (id) => {
-    const updated = cartItems.filter((item) => item._id !== id);
-    saveCart(updated);
-  };
-
-  // Financial calculation
+  // Financial calculation from items lineTotal
   const subtotal = cartItems.reduce(
-    (acc, item) => acc + (item.price || 0) * item.quantity,
+    (acc, item) => acc + (item.lineTotal || 0),
     0
   );
 
@@ -216,8 +179,26 @@ export default function CartDrawer() {
             </div>
           ) : (
             cartItems.map((item) => {
-              const itemTotal = (item.price || 0) * item.quantity;
-              const hasDiscount = item.originalPrice && item.originalPrice > item.price;
+              const qty = item.quantity || 1;
+              let effectiveUnitPrice = 0;
+              if (item.discountedPrice > 0) {
+                effectiveUnitPrice = item.discountedPrice;
+              } else if (item.unitPrice > 0) {
+                effectiveUnitPrice = item.unitPrice;
+              } else if (item.lineTotal > 0) {
+                effectiveUnitPrice = item.lineTotal / qty;
+              } else if (item.itemSubtotal > 0) {
+                effectiveUnitPrice = item.itemSubtotal / qty;
+              } else {
+                effectiveUnitPrice = item.price || 0;
+              }
+
+              let originalUnitPrice = item.originalPrice || item.price || effectiveUnitPrice;
+              if (originalUnitPrice < effectiveUnitPrice) {
+                originalUnitPrice = effectiveUnitPrice;
+              }
+
+              const hasDiscount = originalUnitPrice > effectiveUnitPrice;
               
               return (
                 <div
@@ -249,14 +230,14 @@ export default function CartDrawer() {
                         {item.name}
                       </Link>
 
-                      {/* PRICE ROW */}
+                      {/* PRICE ROW (Discounted green + original strikethrough) */}
                       <div className="flex items-baseline gap-1.5 pt-0.5">
-                        <span className="font-serif font-bold text-sm sm:text-base text-zinc-900">
-                          ₹{item.price?.toLocaleString("en-IN")}
+                        <span className="font-serif font-bold text-sm sm:text-base text-[#1B5E3B]">
+                          ₹{effectiveUnitPrice.toLocaleString("en-IN")}
                         </span>
                         {hasDiscount && (
                           <span className="text-xs text-zinc-400 line-through font-normal">
-                            ₹{item.originalPrice?.toLocaleString("en-IN")}
+                            ₹{originalUnitPrice.toLocaleString("en-IN")}
                           </span>
                         )}
                       </div>
@@ -268,9 +249,9 @@ export default function CartDrawer() {
                       <div className="flex items-center border border-stone-200 rounded-full px-2.5 py-0.5 bg-stone-50/50 shadow-2xs">
                         <button
                           type="button"
-                          onClick={() => handleUpdateQuantity(item._id, -1)}
+                          onClick={() => handleUpdateQuantity(item._id, item.quantity, -1, item.stock || 10)}
                           disabled={item.quantity <= 1}
-                          className="p-1 text-zinc-600 hover:text-black disabled:opacity-30 transition-colors"
+                          className="p-1 text-zinc-600 hover:text-black disabled:opacity-30 transition-colors cursor-pointer"
                           aria-label="Decrease quantity"
                         >
                           <FiMinus className="w-3 h-3" />
@@ -280,9 +261,9 @@ export default function CartDrawer() {
                         </span>
                         <button
                           type="button"
-                          onClick={() => handleUpdateQuantity(item._id, 1)}
-                          disabled={item.quantity >= 10}
-                          className="p-1 text-zinc-600 hover:text-black disabled:opacity-30 transition-colors"
+                          onClick={() => handleUpdateQuantity(item._id, item.quantity, 1, item.stock || 10)}
+                          disabled={item.quantity >= (item.stock || 10)}
+                          className="p-1 text-zinc-600 hover:text-black disabled:opacity-30 transition-colors cursor-pointer"
                           aria-label="Increase quantity"
                         >
                           <FiPlus className="w-3 h-3" />

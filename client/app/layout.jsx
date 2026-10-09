@@ -27,8 +27,12 @@ export default function RootLayout({ children }) {
       lang="en"
       data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-[#F5F2EB] text-[#222222] antialiased">
+      <body
+        className="min-h-full flex flex-col bg-[#F5F2EB] text-[#222222] antialiased"
+        suppressHydrationWarning
+      >
         <StoreJsonLd />
         <ReduxProvider>
           <SmoothScroll>

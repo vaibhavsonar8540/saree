@@ -14,7 +14,7 @@ export const fetchNewArrivals = async (limit = 8) => {
         sortBy: 'newest',
         isActive: true,
       },
-      timeout: 10000,
+      timeout: 15000,
     });
 
     if (response.data && response.data.success && Array.isArray(response.data.data)) {
@@ -34,7 +34,7 @@ export const fetchNewArrivals = async (limit = 8) => {
 export const fetchProductById = async (id) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/sarees/${id}`, {
-      timeout: 10000,
+      timeout: 15000,
     });
 
     if (response.data && response.data.success) {
@@ -54,7 +54,7 @@ export const fetchProductById = async (id) => {
 export const fetchCategoryById = async (id) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/categories/${id}`, {
-      timeout: 10000,
+      timeout: 15000,
     });
     if (response.data && response.data.success) {
       return response.data.data;
@@ -72,9 +72,10 @@ export const fetchCategoryById = async (id) => {
  */
 export const fetchSarees = async (params = {}) => {
   try {
+    const queryParams = { isActive: true, ...params };
     const response = await axios.get(`${API_BASE_URL}/sarees`, {
-      params,
-      timeout: 10000,
+      params: queryParams,
+      timeout: 15000,
     });
     if (response.data && response.data.success) {
       const list = Array.isArray(response.data.data) ? response.data.data : [];
@@ -113,7 +114,7 @@ export const fetchMostLovedProducts = async (limit = 8) => {
         sortBy: 'popular',
         isActive: true,
       },
-      timeout: 10000,
+      timeout: 15000,
     });
 
     if (response.data && response.data.success && Array.isArray(response.data.data)) {

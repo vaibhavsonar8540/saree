@@ -5,18 +5,23 @@ const {
   addToCart,
   updateCartItem,
   removeFromCart,
+  applyCoupon,
+  removeCoupon,
   clearCart,
 } = require('../controllers/cartController');
-const { protect } = require('../middleware/authMiddleware');
+const { guestOrUserAuth } = require('../middleware/guestAuthMiddleware');
 
-// All cart routes are protected for logged-in users
-router.use(protect);
+// Apply guestOrUserAuth middleware to all cart endpoints
+router.use(guestOrUserAuth);
 
 router
   .route('/')
   .get(getCart)
   .post(addToCart)
   .delete(clearCart);
+
+router.post('/coupon', applyCoupon);
+router.delete('/coupon', removeCoupon);
 
 router
   .route('/items/:itemId')

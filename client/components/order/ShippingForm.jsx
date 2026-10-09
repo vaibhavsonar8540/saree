@@ -143,6 +143,46 @@ export default function ShippingForm({
     validateField(fieldName, formData[fieldName]);
   };
 
+  const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [pincodeStatus, setPincodeStatus] = useState(null); // { serviceable: boolean, message: string }
+
+  // Debounced pincode lookup effect
+  useEffect(() => {
+    const cleanPin = formData.pincode ? formData.pincode.trim() : "";
+    if (cleanPin.length === 6 && /^[1-9][0-9]{5}$/.test(cleanPin)) {
+      const timer = setTimeout(async () => {
+        setPincodeLoading(true);
+        try {
+          const res = await fetch(`http://localhost:5000/api/shipping/check-pincode/${cleanPin}`);
+          const json = await res.json();
+          if (json?.success && json?.data) {
+            const data = json.data;
+            if (data.serviceable) {
+              setPincodeStatus({ serviceable: true, message: `Delivering to ${data.city}, ${data.state} (${data.estimated_delivery_days})` });
+              setFormData((prev) => ({
+                ...prev,
+                city: prev.city || data.city,
+                state: prev.state || data.state,
+              }));
+              setErrors((prev) => ({ ...prev, pincode: "" }));
+            } else {
+              setPincodeStatus({ serviceable: false, message: `We don't deliver to pincode ${cleanPin} yet.` });
+              setErrors((prev) => ({ ...prev, pincode: `We don't deliver to pincode ${cleanPin} yet` }));
+            }
+          }
+        } catch (e) {
+          setPincodeStatus({ serviceable: true, message: "Pincode verified" });
+        } finally {
+          setPincodeLoading(false);
+        }
+      }, 400);
+
+      return () => clearTimeout(timer);
+    } else {
+      setPincodeStatus(null);
+    }
+  }, [formData.pincode]);
+
   const validateAll = () => {
     const newErrors = {};
     let isValid = true;
@@ -525,7 +565,15 @@ export default function ShippingForm({
                 }`}
               />
             </div>
-            {errors.pincode && (
+            {pincodeLoading && (
+              <p className="text-[11px] text-zinc-500 font-medium">Checking delivery serviceability...</p>
+            )}
+            {pincodeStatus && !pincodeLoading && (
+              <p className={`text-[11px] font-semibold ${pincodeStatus.serviceable ? 'text-emerald-700' : 'text-rose-600'}`}>
+                {pincodeStatus.message}
+              </p>
+            )}
+            {errors.pincode && !pincodeStatus && (
               <p id="pincode-error" className="text-xs text-rose-600 font-medium">
                 {errors.pincode}
               </p>

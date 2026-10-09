@@ -14,7 +14,7 @@ export const fetchProductsAction = createAsyncThunk(
   'product/fetchProducts',
   async (params = {}, thunkAPI) => {
     try {
-      const res = await productService.getProducts(params);
+      const res = await productService.getProducts({ limit: 1000, isActive: 'all', ...params });
       return res.data || res;
     } catch (error) {
       const msg = error.response?.data?.message || 'Failed to fetch saree products';
