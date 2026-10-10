@@ -71,7 +71,28 @@ export default async function sitemap() {
       }
     }
   } catch (error) {
-    console.warn('Sitemap generator: Failed to fetch dynamic categories:', error.message);
+    console.warn('Sitemap generator: Failed to fetch dynamic categories (using fallback routes):', error.message);
+  }
+
+  // Fallback category routes if backend was unreachable during build
+  if (categoryRoutes.length === 0) {
+    const fallbackCategories = [
+      'silk-saree',
+      'banarasi-silk',
+      'kanjivaram-silk',
+      'cotton-saree',
+      'organza-saree',
+      'chanderi-saree',
+      'georgette-saree',
+      'party-wear-saree',
+      'wedding-saree',
+    ];
+    categoryRoutes = fallbackCategories.map((catSlug) => ({
+      url: `${baseUrl}/saree/${catSlug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.85,
+    }));
   }
 
   // 3. Fetch product routes dynamically from API
